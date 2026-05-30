@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import ir.hanzodev1375.ghostide.codeeditors.IdeEditor;
+import ir.hanzodev1375.ghostide.codeeditors.langs.cpp.CppLanguage;
 import ir.hanzodev1375.ghostide.codeeditors.langs.java.JavaLanguage;
 import ir.hanzodev1375.ghostide.databinding.EditorFragmentBinding;
 import ir.hanzodev1375.ghostide.mvvm.viewmodel.EditorViewModel;
@@ -64,6 +65,8 @@ public class EditorFragment extends Fragment {
     if (filePath != null) viewModel.loadFile(filePath);
     if (filePath.endsWith(".java")) {
       editor.setEditorLanguage(new JavaLanguage());
+    }else if(filePath.endsWith(".cpp")) {
+    	editor.setEditorLanguage(new CppLanguage());
     }
   //  editor.setColorScheme(new SchemeDarcula());
   }
@@ -73,5 +76,8 @@ public class EditorFragment extends Fragment {
     if (viewModel != null && editor != null) viewModel.saveFile(editor.getText());
     super.onDestroyView();
     binding = null;
+  }
+  public IdeEditor getEditor(){
+    return editor;
   }
 }

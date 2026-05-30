@@ -4,16 +4,18 @@ kotlin = "2.1.0"
 coreKtx = "1.6.0"
 appcompat = "1.7.1"
 material = "1.13.0"
+guava = "33.2.1-android"
 constraintlayout = "2.2.1"
-
 # Editor
-soraEditorVersion = "0.23.5"          # ← added
-
+soraEditorVersion = "0.24.5"
 # Gson 
 gsonversion = "2.13.1"
 
 #Android util code 
 utilcodev = "1.31.1"
+#antlr4
+antlrv = "4.13.2"
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -26,8 +28,12 @@ material = { group = "com.google.android.material", name = "material", version.r
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 
 # Use the new version reference
-other-sora-editor-code = { group = "io.github.Rosemoe.sora-editor", name = "editor", version.ref = "soraEditorVersion" }
-other-sora-editor-lsp = { group = "io.github.Rosemoe.sora-editor", name = "editor-lsp", version.ref = "soraEditorVersion" }
+other-sora-editor-code = { group = "io.github.rosemoe", name = "editor", version.ref = "soraEditorVersion" }
+other-sora-editor-lsp = { group = "io.github.rosemoe", name = "editor-lsp", version.ref = "soraEditorVersion" }
 
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gsonversion" }
 utilcode = { group = "com.blankj", name = "utilcodex",version.ref = "utilcodev" }
+antlr = { group = "org.antlr", name = "antlr4",version.ref = "antlrv" }
+
+
+guava = { module = "com.google.guava:guava", version.ref = "guava" }

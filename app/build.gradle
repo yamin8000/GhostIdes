@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace 'ir.hanzodev1375.ghostide'
-    compileSdk 35
+    compileSdk 36
  
     defaultConfig {
         applicationId 'ir.hanzodev1375.ghostide'

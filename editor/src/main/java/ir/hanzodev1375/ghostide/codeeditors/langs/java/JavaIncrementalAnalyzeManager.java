@@ -38,8 +38,8 @@ import io.github.rosemoe.sora.lang.styling.span.SpanExtAttrs;
 import io.github.rosemoe.sora.text.Content;
 import io.github.rosemoe.sora.text.ContentReference;
 import io.github.rosemoe.sora.util.IntPair;
-import io.github.rosemoe.sora.widget.schemes.EditorColorScheme;
 
+import ir.hanzodev1375.ghostide.codeeditors.colorscheme.GhostColorScheme;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -313,16 +313,14 @@ public class JavaIncrementalAnalyzeManager
       switch (token) {
         case WHITESPACE:
         case NEWLINE:
-          span =
-              SpanFactory.obtain(offset, TextStyle.makeStyle(EditorColorScheme.TEXT_NORMAL));
+          span = SpanFactory.obtain(offset, TextStyle.makeStyle(GhostColorScheme.TEXT_NORMAL));
           break;
         case CHARACTER_LITERAL:
         case FLOATING_POINT_LITERAL:
         case INTEGER_LITERAL:
         case STRING:
           classNamePrevious = false;
-          span =
-              SpanFactory.obtain(offset, TextStyle.makeStyle(EditorColorScheme.LITERAL, true));
+          span = SpanFactory.obtain(offset, TextStyle.makeStyle(GhostColorScheme.LITERAL, true));
           break;
         case INT:
         case LONG:
@@ -337,7 +335,7 @@ public class JavaIncrementalAnalyzeManager
           classNamePrevious = true;
           span =
               SpanFactory.obtain(
-                  offset, TextStyle.makeStyle(EditorColorScheme.KEYWORD, 0, true, false, false));
+                  offset, TextStyle.makeStyle(GhostColorScheme.KEYWORD, 0, true, false, false));
           break;
         case ABSTRACT:
         case ASSERT:
@@ -388,26 +386,27 @@ public class JavaIncrementalAnalyzeManager
           classNamePrevious = false;
           span =
               SpanFactory.obtain(
-                  offset, TextStyle.makeStyle(EditorColorScheme.KEYWORD, 0, true, false, false));
+                  offset, TextStyle.makeStyle(GhostColorScheme.KEYWORD, 0, true, false, false));
           break;
         case LINE_COMMENT:
         case LONG_COMMENT_COMPLETE:
         case LONG_COMMENT_INCOMPLETE:
-        
           span =
               SpanFactory.obtain(
                   offset,
-                  TextStyle.makeStyle(EditorColorScheme.COMMENT, 0, false, true, false, true));
+                  TextStyle.makeStyle(GhostColorScheme.COMMENT, 0, false, true, false, true));
           break;
         case IDENTIFIER:
           {
-            int type = EditorColorScheme.IDENTIFIER_NAME;
+            int type = GhostColorScheme.IDENTIFIER_NAME;
             if (classNamePrevious) {
-              type = EditorColorScheme.IDENTIFIER_VAR;
+              type = GhostColorScheme.IDENTIFIER_VAR;
               classNamePrevious = false;
             } else {
               if (previous == Tokens.AT) {
-                type = EditorColorScheme.ANNOTATION;
+                type = GhostColorScheme.ANNOTATION;
+              } else if (previous == Tokens.DOT) {
+                type = GhostColorScheme.COLORNEXTDOT;
               } else {
                 // Peek next token
                 int j = i + 1;
@@ -428,9 +427,12 @@ public class JavaIncrementalAnalyzeManager
                   j++;
                 }
                 if (next == Tokens.LPAREN) {
-                  type = EditorColorScheme.FUNCTION_NAME;
+                  type = GhostColorScheme.FUNCTION_NAME;
                 } else {
                   classNamePrevious = true;
+                }
+                if (next == Tokens.DOT) {
+                  type = GhostColorScheme.COLORNEXTDOT;
                 }
               }
             }
@@ -439,12 +441,12 @@ public class JavaIncrementalAnalyzeManager
           }
         default:
           if (token == Tokens.LBRACK || (token == Tokens.RBRACK && previous == Tokens.LBRACK)) {
-            span = SpanFactory.obtain(offset, EditorColorScheme.OPERATOR);
+            span = SpanFactory.obtain(offset, GhostColorScheme.OPERATOR);
             break;
           }
-          
+
           classNamePrevious = false;
-          span = SpanFactory.obtain(offset, EditorColorScheme.OPERATOR);
+          span = SpanFactory.obtain(offset, GhostColorScheme.OPERATOR);
       }
       switch (token) {
         case LINE_COMMENT:

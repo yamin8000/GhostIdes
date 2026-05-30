@@ -5,6 +5,7 @@
     android:id="@+id/_coordinator"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     
 >
     <LinearLayout
@@ -35,7 +36,8 @@
                 app:tabMode="scrollable"
                 app:tabIndicatorHeight="3dp"
                 app:tabTextAppearance="@android:style/TextAppearance.Widget.TabWidget"
-                />
+                
+            />
             <androidx.viewpager2.widget.ViewPager2
                 android:id="@+id/viewPager"
                 android:layout_width="match_parent"

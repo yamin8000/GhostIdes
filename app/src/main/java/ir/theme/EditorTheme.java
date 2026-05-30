@@ -115,6 +115,21 @@ public class EditorTheme {
   @SerializedName("problemTypo")
   private String problemTypo;
 
+  @SerializedName("colornextdot")
+  private String colornextdot;
+
+  @SerializedName("colornextbrak")
+  private String colornextbrak;
+
+  @SerializedName("colornextchar")
+  private String colornextchar;
+
+  @SerializedName("coloruppercase")
+  private String coloruppercase;
+
+  @SerializedName("colornextless")
+  private String colornextless;
+
   public String getLineDivider() {
     return lineDivider;
   }
@@ -409,5 +424,45 @@ public class EditorTheme {
 
   public void setProblemTypo(String problemTypo) {
     this.problemTypo = problemTypo;
+  }
+
+  public String getColornextdot() {
+    return this.colornextdot;
+  }
+
+  public void setColornextdot(String colornextdot) {
+    this.colornextdot = colornextdot;
+  }
+
+  public String getColornextbrak() {
+    return this.colornextbrak;
+  }
+
+  public void setColornextbrak(String colornextbrak) {
+    this.colornextbrak = colornextbrak;
+  }
+
+  public String getColornextchar() {
+    return this.colornextchar;
+  }
+
+  public void setColornextchar(String colornextchar) {
+    this.colornextchar = colornextchar;
+  }
+
+  public String getColoruppercase() {
+    return this.coloruppercase;
+  }
+
+  public void setColoruppercase(String coloruppercase) {
+    this.coloruppercase = coloruppercase;
+  }
+
+  public String getColornextless() {
+    return this.colornextless;
+  }
+
+  public void setColornextless(String colornextless) {
+    this.colornextless = colornextless;
   }
 }

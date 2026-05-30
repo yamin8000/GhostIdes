@@ -2,9 +2,9 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout
      xmlns:android="http://schemas.android.com/apk/res/android"
      xmlns:app="http://schemas.android.com/apk/res-auto"
-     xmlns:tools="http://schemas.android.com/tools"
      android:layout_height="match_parent"
      android:layout_width="match_parent"
+     android:fitsSystemWindows="true"
      android:id="@+id/coordinator">
 
     <LinearLayout
@@ -13,45 +13,40 @@
          android:orientation="vertical">
 
         <LinearLayout
-             android:layout_height="match_parent"
+             android:layout_height="150dp"
              android:layout_width="match_parent"
-             android:orientation="vertical">
+             android:background="#757575"
+             android:padding="8dp"
+             android:orientation="vertical"
+             android:id="@+id/headtop">
 
-            <LinearLayout
-                 android:layout_height="150dp"
+        </LinearLayout>
+
+        <LinearLayout
+             android:layout_height="0dp"
+             android:layout_width="match_parent"
+             android:elevation="8dp"
+             android:padding="8dp"
+             android:orientation="vertical"
+             android:clipToOutline="true"
+             android:layout_marginTop="-20dp"
+             android:layout_weight="1"
+             android:id="@+id/headline">
+
+            <ProgressBar
+                 android:layout_height="wrap_content"
                  android:layout_width="match_parent"
-                 android:background="#757575"
+                 android:indeterminate="false"
                  android:padding="8dp"
-                 android:orientation="vertical"
-                 android:id="@+id/headtop">
+                 style="?android:progressBarStyleHorizontal"
+                 android:id="@+id/loadingprogass" />
 
-            </LinearLayout>
-
-            <LinearLayout
+            <androidx.recyclerview.widget.RecyclerView
                  android:layout_height="match_parent"
                  android:layout_width="match_parent"
-                 android:background="#000000"
-                 android:orientation="vertical"
-                 android:id="@+id/headline">
-
-                <ProgressBar
-                     android:layout_height="wrap_content"
-                     android:layout_width="match_parent"
-                     android:indeterminate="false"
-                     android:padding="8dp"
-                     style="?android:progressBarStyleHorizontal"
-                     android:id="@+id/loadingprogass" />
-
-                <androidx.recyclerview.widget.RecyclerView
-                     android:layout_height="wrap_content"
-                     android:layout_width="match_parent"
-                     android:padding="8dp"
-                     android:layout_marginLeft="2dp"
-                     android:layout_marginRight="2dp"
-                     android:layout_marginTop="5dp"
-                     android:id="@+id/rvfiles" />
-
-            </LinearLayout>
+                 android:clipToPadding="false"
+                 android:layout_marginTop="5dp"
+                 android:id="@+id/rvfiles" />
 
         </LinearLayout>
 
@@ -62,6 +57,7 @@
          android:layout_width="wrap_content"
          android:layout_margin="16dp"
          android:id="@+id/fab"
-         android:layout_gravity="right|bottom" />
+         android:src="@drawable/add"
+         android:layout_gravity="bottom|end" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

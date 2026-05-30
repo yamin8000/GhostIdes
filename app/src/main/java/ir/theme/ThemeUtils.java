@@ -11,6 +11,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme;
 import ir.hanzodev1375.ghostide.codeeditors.IdeEditor;
+import ir.hanzodev1375.ghostide.codeeditors.colorscheme.GhostColorScheme;
 import java.lang.reflect.Field;
 
 public class ThemeUtils {
@@ -72,133 +73,58 @@ public class ThemeUtils {
 
     EditorTheme t = theme.getEditor();
 
-    EditorColorScheme scheme = editor.getColorScheme();
-    scheme.setColor(EditorColorScheme.KEYWORD, Color.parseColor(t.getKeyword()));
-    scheme.setColor(EditorColorScheme.WHOLE_BACKGROUND, Color.parseColor(t.getWholeBackground()));
-    scheme.setColor(EditorColorScheme.LINE_DIVIDER, Color.parseColor(t.getLineDivider()));
-    scheme.setColor(EditorColorScheme.LINE_NUMBER, Color.parseColor(t.getLineNumber()));
+    var scheme = editor.getColorScheme();
+    scheme.setColor(GhostColorScheme.KEYWORD, Color.parseColor(t.getKeyword()));
+    scheme.setColor(GhostColorScheme.WHOLE_BACKGROUND, Color.parseColor(t.getWholeBackground()));
+    scheme.setColor(GhostColorScheme.LINE_DIVIDER, Color.parseColor(t.getLineDivider()));
+    scheme.setColor(GhostColorScheme.LINE_NUMBER, Color.parseColor(t.getLineNumber()));
     scheme.setColor(
-        EditorColorScheme.LINE_NUMBER_BACKGROUND, Color.parseColor(t.getLineNumberBackground()));
-    scheme.setColor(EditorColorScheme.WHOLE_BACKGROUND, Color.parseColor(t.getWholeBackground()));
-    scheme.setColor(EditorColorScheme.TEXT_NORMAL, Color.parseColor(t.getTextNormal()));
+        GhostColorScheme.LINE_NUMBER_BACKGROUND, Color.parseColor(t.getLineNumberBackground()));
+    scheme.setColor(GhostColorScheme.WHOLE_BACKGROUND, Color.parseColor(t.getWholeBackground()));
+    scheme.setColor(GhostColorScheme.TEXT_NORMAL, Color.parseColor(t.getTextNormal()));
     scheme.setColor(
-        EditorColorScheme.SELECTED_TEXT_BACKGROUND,
-        Color.parseColor(t.getSelectedTextBackground()));
-    scheme.setColor(EditorColorScheme.SELECTION_INSERT, Color.parseColor(t.getSelectionInsert()));
-    scheme.setColor(EditorColorScheme.SELECTION_HANDLE, Color.parseColor(t.getSelectionHandle()));
-    scheme.setColor(EditorColorScheme.CURRENT_LINE, Color.parseColor(t.getCurrentLine()));
-    scheme.setColor(EditorColorScheme.UNDERLINE, Color.parseColor(t.getUnderline()));
-    scheme.setColor(EditorColorScheme.SCROLL_BAR_THUMB, Color.parseColor(t.getScrollBarThumb()));
+        GhostColorScheme.SELECTED_TEXT_BACKGROUND, Color.parseColor(t.getSelectedTextBackground()));
+    scheme.setColor(GhostColorScheme.SELECTION_INSERT, Color.parseColor(t.getSelectionInsert()));
+    scheme.setColor(GhostColorScheme.SELECTION_HANDLE, Color.parseColor(t.getSelectionHandle()));
+    scheme.setColor(GhostColorScheme.CURRENT_LINE, Color.parseColor(t.getCurrentLine()));
+    scheme.setColor(GhostColorScheme.UNDERLINE, Color.parseColor(t.getUnderline()));
+    scheme.setColor(GhostColorScheme.SCROLL_BAR_THUMB, Color.parseColor(t.getScrollBarThumb()));
     scheme.setColor(
-        EditorColorScheme.SCROLL_BAR_THUMB_PRESSED, Color.parseColor(t.getScrollBarThumbPressed()));
-    scheme.setColor(EditorColorScheme.SCROLL_BAR_TRACK, Color.parseColor(t.getScrollBarTrack()));
-    scheme.setColor(EditorColorScheme.BLOCK_LINE, Color.parseColor(t.getBlockLine()));
+        GhostColorScheme.SCROLL_BAR_THUMB_PRESSED, Color.parseColor(t.getScrollBarThumbPressed()));
+    scheme.setColor(GhostColorScheme.SCROLL_BAR_TRACK, Color.parseColor(t.getScrollBarTrack()));
+    scheme.setColor(GhostColorScheme.BLOCK_LINE, Color.parseColor(t.getBlockLine()));
+    scheme.setColor(GhostColorScheme.BLOCK_LINE_CURRENT, Color.parseColor(t.getBlockLineCurrent()));
+    scheme.setColor(GhostColorScheme.LINE_NUMBER_PANEL, Color.parseColor(t.getLineNumberPanel()));
     scheme.setColor(
-        EditorColorScheme.BLOCK_LINE_CURRENT, Color.parseColor(t.getBlockLineCurrent()));
-    scheme.setColor(EditorColorScheme.LINE_NUMBER_PANEL, Color.parseColor(t.getLineNumberPanel()));
+        GhostColorScheme.LINE_NUMBER_PANEL_TEXT, Color.parseColor(t.getLineNumberPanelText()));
     scheme.setColor(
-        EditorColorScheme.LINE_NUMBER_PANEL_TEXT, Color.parseColor(t.getLineNumberPanelText()));
-    scheme.setColor(
-        EditorColorScheme.COMPLETION_WND_BACKGROUND,
+        GhostColorScheme.COMPLETION_WND_BACKGROUND,
         Color.parseColor(t.getCompletionWndBackground()));
     scheme.setColor(
-        EditorColorScheme.COMPLETION_WND_CORNER, Color.parseColor(t.getCompletionWndCorner()));
-    scheme.setColor(EditorColorScheme.KEYWORD, Color.parseColor(t.getKeyword()));
-    scheme.setColor(EditorColorScheme.COMMENT, Color.parseColor(t.getComment()));
-    scheme.setColor(EditorColorScheme.OPERATOR, Color.parseColor(t.getOperator()));
-    scheme.setColor(EditorColorScheme.LITERAL, Color.parseColor(t.getLiteral()));
-    scheme.setColor(EditorColorScheme.IDENTIFIER_VAR, Color.parseColor(t.getIdentifierVar()));
-    scheme.setColor(EditorColorScheme.IDENTIFIER_NAME, Color.parseColor(t.getIdentifierName()));
-    scheme.setColor(EditorColorScheme.FUNCTION_NAME, Color.parseColor(t.getFunctionName()));
-    scheme.setColor(EditorColorScheme.ANNOTATION, Color.parseColor(t.getAnnotation()));
+        GhostColorScheme.COMPLETION_WND_CORNER, Color.parseColor(t.getCompletionWndCorner()));
+    scheme.setColor(GhostColorScheme.KEYWORD, Color.parseColor(t.getKeyword()));
+    scheme.setColor(GhostColorScheme.COMMENT, Color.parseColor(t.getComment()));
+    scheme.setColor(GhostColorScheme.OPERATOR, Color.parseColor(t.getOperator()));
+    scheme.setColor(GhostColorScheme.LITERAL, Color.parseColor(t.getLiteral()));
+    scheme.setColor(GhostColorScheme.IDENTIFIER_VAR, Color.parseColor(t.getIdentifierVar()));
+    scheme.setColor(GhostColorScheme.IDENTIFIER_NAME, Color.parseColor(t.getIdentifierName()));
+    scheme.setColor(GhostColorScheme.FUNCTION_NAME, Color.parseColor(t.getFunctionName()));
+    scheme.setColor(GhostColorScheme.ANNOTATION, Color.parseColor(t.getAnnotation()));
     scheme.setColor(
-        EditorColorScheme.MATCHED_TEXT_BACKGROUND, Color.parseColor(t.getMatchedTextBackground()));
-    scheme.setColor(EditorColorScheme.TEXT_SELECTED, Color.parseColor(t.getTextSelected()));
-    scheme.setColor(
-        EditorColorScheme.NON_PRINTABLE_CHAR, Color.parseColor(t.getNonPrintableChar()));
-    scheme.setColor(EditorColorScheme.HTML_TAG, Color.parseColor(t.getHtmlTag()));
-    scheme.setColor(EditorColorScheme.ATTRIBUTE_NAME, Color.parseColor(t.getAttributeName()));
-    scheme.setColor(EditorColorScheme.ATTRIBUTE_VALUE, Color.parseColor(t.getAttributeValue()));
-    scheme.setColor(EditorColorScheme.PROBLEM_ERROR, Color.parseColor(t.getProblemError()));
-    scheme.setColor(EditorColorScheme.PROBLEM_WARNING, Color.parseColor(t.getProblemWarning()));
-    scheme.setColor(EditorColorScheme.PROBLEM_TYPO, Color.parseColor(t.getProblemTypo()));
-    //
-    //    setColor(scheme, EditorColorScheme.LINE_DIVIDER, t.getLineDivider());
-    //
-    //    setColor(scheme, EditorColorScheme.LINE_NUMBER, t.getLineNumber());
-    //
-    //    setColor(scheme, EditorColorScheme.LINE_NUMBER_BACKGROUND, t.getLineNumberBackground());
-    //
-    //    setColor(scheme, EditorColorScheme.WHOLE_BACKGROUND, t.getWholeBackground());
-    //
-    //    setColor(scheme, EditorColorScheme.TEXT_NORMAL, t.getTextNormal());
-    //
-    //    setColor(scheme, EditorColorScheme.SELECTED_TEXT_BACKGROUND,
-    // t.getSelectedTextBackground());
-    //
-    //    setColor(scheme, EditorColorScheme.SELECTION_INSERT, t.getSelectionInsert());
-    //
-    //    setColor(scheme, EditorColorScheme.SELECTION_HANDLE, t.getSelectionHandle());
-    //
-    //    setColor(scheme, EditorColorScheme.CURRENT_LINE, t.getCurrentLine());
-    //
-    //    setColor(scheme, EditorColorScheme.UNDERLINE, t.getUnderline());
-    //
-    //    setColor(scheme, EditorColorScheme.SCROLL_BAR_THUMB, t.getScrollBarThumb());
-    //
-    //    setColor(scheme, EditorColorScheme.SCROLL_BAR_THUMB_PRESSED,
-    // t.getScrollBarThumbPressed());
-    //
-    //    setColor(scheme, EditorColorScheme.SCROLL_BAR_TRACK, t.getScrollBarTrack());
-    //
-    //    setColor(scheme, EditorColorScheme.BLOCK_LINE, t.getBlockLine());
-    //
-    //    setColor(scheme, EditorColorScheme.BLOCK_LINE_CURRENT, t.getBlockLineCurrent());
-    //
-    //    setColor(scheme, EditorColorScheme.LINE_NUMBER_PANEL, t.getLineNumberPanel());
-    //
-    //    setColor(scheme, EditorColorScheme.LINE_NUMBER_PANEL_TEXT, t.getLineNumberPanelText());
-    //
-    //    setColor(scheme, EditorColorScheme.COMPLETION_WND_BACKGROUND,
-    // t.getCompletionWndBackground());
-    //
-    //    setColor(scheme, EditorColorScheme.COMPLETION_WND_CORNER, t.getCompletionWndCorner());
-    //
-    //    setColor(scheme, EditorColorScheme.KEYWORD, t.getKeyword());
-    //
-    //    setColor(scheme, EditorColorScheme.COMMENT, t.getComment());
-    //
-    //    setColor(scheme, EditorColorScheme.OPERATOR, t.getOperator());
-    //
-    //    setColor(scheme, EditorColorScheme.LITERAL, t.getLiteral());
-    //
-    //    setColor(scheme, EditorColorScheme.IDENTIFIER_VAR, t.getIdentifierVar());
-    //
-    //    setColor(scheme, EditorColorScheme.IDENTIFIER_NAME, t.getIdentifierName());
-    //
-    //    setColor(scheme, EditorColorScheme.FUNCTION_NAME, t.getFunctionName());
-    //
-    //    setColor(scheme, EditorColorScheme.ANNOTATION, t.getAnnotation());
-    //
-    //    setColor(scheme, EditorColorScheme.MATCHED_TEXT_BACKGROUND, t.getMatchedTextBackground());
-    //
-    //    setColor(scheme, EditorColorScheme.TEXT_SELECTED, t.getTextSelected());
-    //
-    //    setColor(scheme, EditorColorScheme.NON_PRINTABLE_CHAR, t.getNonPrintableChar());
-    //
-    //    setColor(scheme, EditorColorScheme.HTML_TAG, t.getHtmlTag());
-    //
-    //    setColor(scheme, EditorColorScheme.ATTRIBUTE_NAME, t.getAttributeName());
-    //
-    //    setColor(scheme, EditorColorScheme.ATTRIBUTE_VALUE, t.getAttributeValue());
-    //
-    //    setColor(scheme, EditorColorScheme.PROBLEM_ERROR, t.getProblemError());
-    //
-    //    setColor(scheme, EditorColorScheme.PROBLEM_WARNING, t.getProblemWarning());
-    //
-    //    setColor(scheme, EditorColorScheme.PROBLEM_TYPO, t.getProblemTypo());
-
-    //   editor.invalidate();
+        GhostColorScheme.MATCHED_TEXT_BACKGROUND, Color.parseColor(t.getMatchedTextBackground()));
+    scheme.setColor(GhostColorScheme.TEXT_SELECTED, Color.parseColor(t.getTextSelected()));
+    scheme.setColor(GhostColorScheme.NON_PRINTABLE_CHAR, Color.parseColor(t.getNonPrintableChar()));
+    scheme.setColor(GhostColorScheme.HTML_TAG, Color.parseColor(t.getHtmlTag()));
+    scheme.setColor(GhostColorScheme.ATTRIBUTE_NAME, Color.parseColor(t.getAttributeName()));
+    scheme.setColor(GhostColorScheme.ATTRIBUTE_VALUE, Color.parseColor(t.getAttributeValue()));
+    scheme.setColor(GhostColorScheme.PROBLEM_ERROR, Color.parseColor(t.getProblemError()));
+    scheme.setColor(GhostColorScheme.PROBLEM_WARNING, Color.parseColor(t.getProblemWarning()));
+    scheme.setColor(GhostColorScheme.PROBLEM_TYPO, Color.parseColor(t.getProblemTypo()));
+    scheme.setColor(GhostColorScheme.COLORNEXTDOT, Color.parseColor(t.getColornextdot()));
+    scheme.setColor(GhostColorScheme.COLORNEXTBRAK, Color.parseColor(t.getColornextbrak()));
+    scheme.setColor(GhostColorScheme.COLORNEXTCHAR, Color.parseColor(t.getColornextchar()));
+    scheme.setColor(GhostColorScheme.COLORUPPERCASE, Color.parseColor(t.getColoruppercase()));
+    scheme.setColor(GhostColorScheme.COLORNEXTLESS, Color.parseColor(t.getColornextless()));
   }
 
   public void applyTextView(TextView textView) {

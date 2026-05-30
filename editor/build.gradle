@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    compileSdk 34
+    compileSdk 36
     namespace 'ir.hanzodev1375.ghostide.codeeditors'
     defaultConfig {
         minSdkVersion 26
@@ -28,4 +28,6 @@ dependencies {
     api(libs.other.sora.editor.lsp)
     implementation libs.utilcode
     implementation libs.gson
+    implementation libs.antlr
+    implementation libs.guava
 }

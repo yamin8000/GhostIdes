@@ -94,7 +94,12 @@ public class ThemeManager {
                 "attributeValue": "#ce9178",
                 "problemError": "#f44747",
                 "problemWarning": "#cca700",
-                "problemTypo": "#00ff00"
+                "problemTypo": "#00ff00",  
+                "colornextdot": "#FF00FFD4",
+                "colornextbrak": "#FF00FF80",
+                "colornextchar": "#FFFFF200",
+                "coloruppercase": "#FFFF0073",
+                "colornextless": "#FF99FF00"
             },
             "widget": {
                 "text": "#cccccc",

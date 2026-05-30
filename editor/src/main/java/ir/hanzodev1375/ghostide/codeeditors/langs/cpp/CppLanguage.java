@@ -1,28 +1,8 @@
-/*
- *    sora-editor - the awesome code editor for Android
- *    https://github.com/Rosemoe/sora-editor
- *    Copyright (C) 2020-2024  Rosemoe
- *
- *     This library is free software; you can redistribute it and/or
- *     modify it under the terms of the GNU Lesser General Public
- *     License as published by the Free Software Foundation; either
- *     version 2.1 of the License, or (at your option) any later version.
- *
- *     This library is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *     Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public
- *     License along with this library; if not, write to the Free Software
- *     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
- *     USA
- *
- *     Please contact Rosemoe by email 2073412493@qq.com if you need
- *     additional information or have any questions
- */
-package ir.hanzodev1375.ghostide.codeeditors.langs.java;
+package ir.hanzodev1375.ghostide.codeeditors.langs.cpp;
 
+
+import ir.hanzodev1375.ghostide.codeeditors.langs.antlr4base.CharParser;
+import ir.hanzodev1375.ghostide.codeeditors.langs.java.JavaQuoteHandler;
 import static java.lang.Character.isWhitespace;
 
 import android.os.Bundle;
@@ -58,7 +38,7 @@ import io.github.rosemoe.sora.widget.SymbolPairMatch;
  *
  * @author Rosemoe
  */
-public class JavaLanguage implements Language {
+public class CppLanguage implements Language {
 
   private static final CodeSnippet FOR_SNIPPET =
       CodeSnippetParser.parse("for(int ${1:i} = 0;$1 < ${2:count};$1++) {\n    $0\n}");
@@ -68,12 +48,15 @@ public class JavaLanguage implements Language {
   private static final CodeSnippet CLIPBOARD_SNIPPET = CodeSnippetParser.parse("${1:${CLIPBOARD}}");
 
   private IdentifierAutoComplete autoComplete;
-  private final JavaIncrementalAnalyzeManager manager;
+  private final CppAnalyzer manager;
   private final JavaQuoteHandler javaQuoteHandler = new JavaQuoteHandler();
 
-  public JavaLanguage() {
-    autoComplete = new IdentifierAutoComplete(JavaTextTokenizer.sKeywords);
-    manager = new JavaIncrementalAnalyzeManager();
+  public CppLanguage() {
+    String[] cppkeyword ={
+      "const","if","for"
+    };
+    autoComplete = new IdentifierAutoComplete(cppkeyword);
+    manager = new CppAnalyzer();
   }
 
   @NonNull
@@ -105,11 +88,8 @@ public class JavaLanguage implements Language {
       @NonNull CompletionPublisher publisher,
       @NonNull Bundle extraArguments) {
     var prefix =
-        CompletionHelper.computePrefix(content, position, MyCharacter::isJavaIdentifierPart);
-    final var idt = manager.identifiers;
-    if (idt != null) {
-      autoComplete.requireAutoComplete(content, position, prefix, publisher, idt);
-    }
+        CompletionHelper.computePrefix(content, position, CharParser::parserJava);
+      autoComplete.requireAutoComplete(content, position, prefix, publisher,manager.getSyncIdentifiers());
     if ("fori".startsWith(prefix) && prefix.length() > 0) {
       publisher.addItem(
           new SimpleSnippetCompletionItem(
@@ -140,14 +120,7 @@ public class JavaLanguage implements Language {
   }
 
   private int getIndentAdvance(String content) {
-    JavaTextTokenizer t = new JavaTextTokenizer(content);
-    Tokens token;
-    int advance = 0;
-    while ((token = t.nextToken()) != Tokens.EOF) {
-      if (token == Tokens.LBRACE) {
-        advance++;
-      }
-    }
+    int advance = 1;
     advance = Math.max(0, advance);
     return advance * 4;
   }
