@@ -20,7 +20,7 @@ public class BaseCompat extends AppCompatActivity
 
   @Override
   protected void attachBaseContext(Context newBase) {
-    // 1. 在绑定基础Context时，就读取并应用主题
+    
     prefs = new PreferencesUtils(newBase);
     int themeIndex = prefs.getAppTheme();
     int themeResId = getThemeResId(themeIndex);
@@ -31,7 +31,7 @@ public class BaseCompat extends AppCompatActivity
   @Override
   protected void onCreate(Bundle arg0) {
     prefs = new PreferencesUtils(this);
-    // 2. 主题已在 attachBaseContext 中应用，这里只需确保 EdgeToEdge 正常生效
+    
     EdgeToEdge.enable(this);
     super.onCreate(arg0);
   }
@@ -39,7 +39,7 @@ public class BaseCompat extends AppCompatActivity
   @Override
   protected void onResume() {
     super.onResume();
-    // 3. 注册监听器，当主题偏好发生变化时，重新创建Activity
+    
     prefs.getDefaultPreferences().registerOnSharedPreferenceChangeListener(this);
   }
 
@@ -58,7 +58,7 @@ public class BaseCompat extends AppCompatActivity
     } catch (Exception e) {
       Log.e("BaseCompat", "Error getting theme resource ID", e);
     }
-    return R.style.AppTheme; // Fallback theme
+    return R.style.AppTheme; 
   }
 
   @Override

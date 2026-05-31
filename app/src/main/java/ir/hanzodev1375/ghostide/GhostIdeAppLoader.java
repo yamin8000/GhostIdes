@@ -37,7 +37,7 @@ public class GhostIdeAppLoader extends Application {
     loader = this;
     mApplicationContext = getApplicationContext();
 
-    // اطلاعات دستگاه
+    
     softwareInfo
         .append("SDK: ")
         .append(Build.VERSION.SDK_INT)
@@ -52,23 +52,19 @@ public class GhostIdeAppLoader extends Application {
         .append(Build.VERSION.INCREMENTAL)
         .append("\n");
 
-    // ذخیره‌ی هندلر قبلی
+ 
     defaultExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
-
-    // تنظیم هندلر جدید
     Thread.setDefaultUncaughtExceptionHandler(
         (thread, throwable) -> {
           String stackTrace = Log.getStackTraceString(throwable);
           String dateTime = Calendar.getInstance().getTime().toString();
-
-          // ساخت Intent برای نمایش خطا
           Intent intent = new Intent(mApplicationContext, ErrorManagerActivity.class);
           intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
           intent.putExtra("Error", stackTrace);
           intent.putExtra("Date", dateTime);
           intent.putExtra("Software", softwareInfo.toString());
 
-          // اجرای Activity با کمی تأخیر (روی ترد اصلی)
+          
           new Handler(Looper.getMainLooper())
               .postDelayed(
                   () -> {
@@ -80,7 +76,7 @@ public class GhostIdeAppLoader extends Application {
                   },
                   500);
 
-          // بعد از 1 ثانیه پروسس رو می‌کشیم تا Activity فرصت نمایش داشته باشد
+          
           new Handler(Looper.getMainLooper())
               .postDelayed(
                   () -> {
