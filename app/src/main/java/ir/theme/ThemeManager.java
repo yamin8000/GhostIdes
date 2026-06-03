@@ -208,5 +208,5 @@ public class ThemeManager {
   public void resetToDefault() {
     preferences.edit().remove(ConstKeys.THEME).apply();
     new PreferencesUtils(context).setAppThemeFile("");
-}
+  }
 }

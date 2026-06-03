@@ -18,10 +18,12 @@ public final class HtmlHelper {
 
   private static final List<TagEntry> TAGS = new ArrayList<>();
   private static final List<AttrEntry> ATTRS = new ArrayList<>();
+  private static final List<JsKeywordEntry> JS_KEYWORDS = new ArrayList<>();
 
   static {
     initTags();
     initAttributes();
+    initJsKeywords();
   }
 
   private static void initTags() {
@@ -152,7 +154,7 @@ public final class HtmlHelper {
     addAttr("translate", "Translation", CompletionItemKind.Property);
 
     addAttr("href", "URL link", CompletionItemKind.Property);
-    addAttr("target", "Link target (_blank,_self,_parent,_top)", CompletionItemKind.Property);
+    addAttr("target", "Link target", CompletionItemKind.Property);
     addAttr("rel", "Relationship", CompletionItemKind.Property);
     addAttr("download", "Download file", CompletionItemKind.Property);
     addAttr("hreflang", "Language of linked resource", CompletionItemKind.Property);
@@ -163,7 +165,7 @@ public final class HtmlHelper {
     addAttr("alt", "Alternative text", CompletionItemKind.Property);
     addAttr("width", "Width", CompletionItemKind.Property);
     addAttr("height", "Height", CompletionItemKind.Property);
-    addAttr("loading", "Loading behavior (eager/lazy)", CompletionItemKind.Property);
+    addAttr("loading", "Loading behavior", CompletionItemKind.Property);
 
     addAttr("name", "Name attribute", CompletionItemKind.Property);
     addAttr("value", "Value", CompletionItemKind.Property);
@@ -178,47 +180,89 @@ public final class HtmlHelper {
     addAttr("min", "Minimum value", CompletionItemKind.Property);
     addAttr("max", "Maximum value", CompletionItemKind.Property);
     addAttr("step", "Step value", CompletionItemKind.Property);
-    addAttr("autocomplete", "Autocomplete (on/off)", CompletionItemKind.Property);
+    addAttr("autocomplete", "Autocomplete", CompletionItemKind.Property);
     addAttr("autofocus", "Auto focus", CompletionItemKind.Property);
-    addAttr("form", "Form association", CompletionItemKind.Property);
-    addAttr("formaction", "Form action URL", CompletionItemKind.Property);
-    addAttr("formenctype", "Form encoding type", CompletionItemKind.Property);
-    addAttr("formmethod", "Form method (get/post)", CompletionItemKind.Property);
-    addAttr("formnovalidate", "Form no validate", CompletionItemKind.Property);
-    addAttr("formtarget", "Form target", CompletionItemKind.Property);
 
     addAttr("action", "Form action", CompletionItemKind.Property);
-    addAttr("method", "HTTP method (get/post)", CompletionItemKind.Property);
+    addAttr("method", "HTTP method", CompletionItemKind.Property);
     addAttr("enctype", "Encoding type", CompletionItemKind.Property);
     addAttr("novalidate", "No validation", CompletionItemKind.Property);
 
-    addAttr("cols", "Number of columns", CompletionItemKind.Property);
-    addAttr("rows", "Number of rows", CompletionItemKind.Property);
-    addAttr("wrap", "Text wrapping (soft/hard)", CompletionItemKind.Property);
-    addAttr("maxlength", "Maximum length", CompletionItemKind.Property);
-    addAttr("minlength", "Minimum length", CompletionItemKind.Property);
+    addAttr("cols", "Columns", CompletionItemKind.Property);
+    addAttr("rows", "Rows", CompletionItemKind.Property);
+    addAttr("wrap", "Wrap", CompletionItemKind.Property);
+    addAttr("maxlength", "Max length", CompletionItemKind.Property);
+    addAttr("minlength", "Min length", CompletionItemKind.Property);
     addAttr("size", "Size", CompletionItemKind.Property);
 
-    addAttr("scope", "Table header scope", CompletionItemKind.Property);
+    addAttr("scope", "Header scope", CompletionItemKind.Property);
     addAttr("colspan", "Column span", CompletionItemKind.Property);
     addAttr("rowspan", "Row span", CompletionItemKind.Property);
-    addAttr("headers", "Header ids", CompletionItemKind.Property);
-    addAttr("cellpadding", "Cell padding", CompletionItemKind.Property);
-    addAttr("cellspacing", "Cell spacing", CompletionItemKind.Property);
-    addAttr("border", "Border width", CompletionItemKind.Property);
 
     addAttr("controls", "Media controls", CompletionItemKind.Property);
     addAttr("autoplay", "Auto play", CompletionItemKind.Property);
     addAttr("loop", "Loop", CompletionItemKind.Property);
     addAttr("muted", "Muted", CompletionItemKind.Property);
-    addAttr("poster", "Poster image URL", CompletionItemKind.Property);
-    addAttr("preload", "Preload (none/metadata/auto)", CompletionItemKind.Property);
+    addAttr("poster", "Poster image", CompletionItemKind.Property);
 
     addAttr("async", "Async script", CompletionItemKind.Property);
     addAttr("defer", "Defer script", CompletionItemKind.Property);
-    addAttr("charset", "Character set", CompletionItemKind.Property);
-    addAttr("integrity", "Subresource integrity", CompletionItemKind.Property);
-    addAttr("crossorigin", "CORS settings", CompletionItemKind.Property);
+    addAttr("charset", "Charset", CompletionItemKind.Property);
+    addAttr("integrity", "Integrity", CompletionItemKind.Property);
+    addAttr("crossorigin", "CORS", CompletionItemKind.Property);
+  }
+
+  private static void initJsKeywords() {
+    addJs("var");
+    addJs("let");
+    addJs("const");
+    addJs("function");
+    addJs("return");
+    addJs("if");
+    addJs("else");
+    addJs("for");
+    addJs("while");
+    addJs("switch");
+    addJs("case");
+    addJs("break");
+    addJs("continue");
+    addJs("try");
+    addJs("catch");
+    addJs("finally");
+    addJs("throw");
+    addJs("class");
+    addJs("new");
+    addJs("this");
+    addJs("import");
+    addJs("export");
+    addJs("default");
+    addJs("async");
+    addJs("await");
+    addJs("typeof");
+    addJs("instanceof");
+    addJs("in");
+    addJs("of");
+    addJs("yield");
+    addJs("true");
+    addJs("false");
+    addJs("null");
+    addJs("undefined");
+  }
+
+  private static void addJs(String keyword) {
+    JS_KEYWORDS.add(new JsKeywordEntry(keyword, "JavaScript keyword"));
+  }
+
+  public static List<CustomCompletionItem> getJsKeywordItems(String prefix) {
+    List<CustomCompletionItem> list = new ArrayList<>();
+    for (var k : JS_KEYWORDS) {
+      if (prefix == null || prefix.isEmpty() || k.name.startsWith(prefix)) {
+        var item = new CustomCompletionItem(k.name, k.desc, k.name, k.name.length(), prefix);
+        item.kind(CompletionItemKind.Keyword);
+        list.add(item);
+      }
+    }
+    return list;
   }
 
   private static void addTag(String name, String desc, CompletionItemKind kind) {
@@ -258,7 +302,6 @@ public final class HtmlHelper {
     return items;
   }
 
-  // HtmlHelper.java - اصلاح متد getNormalTag برای فیلتر بر اساس prefix
   public static List<CustomCompletionItem> getNormalTag(String prefix) {
     List<CustomCompletionItem> list = new ArrayList<>();
     for (var tag : TAGS) {
@@ -275,7 +318,6 @@ public final class HtmlHelper {
     return list;
   }
 
-  // متدهای جدید برای attributeها که از کلاس HtmlAttributeCompletionItem استفاده می‌کنند
   public static List<HtmlAttributeCompletionItem> getAllAttributeItems() {
     List<HtmlAttributeCompletionItem> items = new ArrayList<>();
     for (AttrEntry entry : ATTRS) {
@@ -323,6 +365,16 @@ public final class HtmlHelper {
       name = n;
       desc = d;
       kind = k;
+    }
+  }
+
+  private static class JsKeywordEntry {
+    String name;
+    String desc;
+
+    JsKeywordEntry(String n, String d) {
+      name = n;
+      desc = d;
     }
   }
 }

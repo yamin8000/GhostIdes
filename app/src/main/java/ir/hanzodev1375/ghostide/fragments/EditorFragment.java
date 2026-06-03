@@ -9,8 +9,10 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import ir.hanzodev1375.ghostide.codeeditors.IdeEditor;
 import ir.hanzodev1375.ghostide.codeeditors.langs.cpp.CppLanguage;
+import ir.hanzodev1375.ghostide.codeeditors.langs.css.CssLanguage;
 import ir.hanzodev1375.ghostide.codeeditors.langs.html.HtmlLanguage;
 import ir.hanzodev1375.ghostide.codeeditors.langs.java.JavaLanguage;
+import ir.hanzodev1375.ghostide.codeeditors.langs.js.JsLanguage;
 import ir.hanzodev1375.ghostide.databinding.EditorFragmentBinding;
 import ir.hanzodev1375.ghostide.mvvm.viewmodel.EditorViewModel;
 import ir.theme.ThemeManager;
@@ -73,6 +75,10 @@ public class EditorFragment extends Fragment {
       editor.setEditorLanguage(new CppLanguage());
     } else if (filePath.endsWith(".html")) {
       editor.setEditorLanguage(new HtmlLanguage());
+    } else if (filePath.endsWith(".css")) {
+      editor.setEditorLanguage(new CssLanguage());
+    } else if (filePath.endsWith(".js")) {
+      editor.setEditorLanguage(new JsLanguage());
     }
   }
 

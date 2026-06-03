@@ -19,4 +19,6 @@ dependencyResolutionManagement {
 rootProject.name = "Ghostide"
 
 include(":app")
-include ':editor'
+include (':editor')
+include (':components')
+include (':materialfileicon')

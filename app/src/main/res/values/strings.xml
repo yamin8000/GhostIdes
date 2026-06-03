@@ -1,4 +1,5 @@
 <resources>
+    <dimen name="list_item_margin">2dp</dimen>
     <string name="app_name">Ghostide</string>
     <string name="close">close</string>
     <string name="closeother">close other</string>

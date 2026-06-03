@@ -3,9 +3,8 @@ package ir.hanzodev1375.ghostide.utils;
 import android.content.Context;
 import android.content.SharedPreferences;
 import static ir.hanzodev1375.ghostide.utils.ConstKeys.*;
+
 public class PathManager {
-  
-  
 
   private final SharedPreferences prefs;
 

@@ -1,9 +1,16 @@
 package ir.hanzodev1375.ghostide.codeeditors.langs.html;
 
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import io.github.rosemoe.sora.lang.analysis.IncrementalAnalyzeManager.LineTokenizeResult;
 import io.github.rosemoe.sora.lang.completion.IdentifierAutoComplete;
 import io.github.rosemoe.sora.lang.styling.Span;
 import io.github.rosemoe.sora.lang.styling.TextStyle;
+import io.github.rosemoe.sora.lang.styling.color.ConstColor;
+import io.github.rosemoe.sora.lang.styling.color.ResolvableColor;
+import io.github.rosemoe.sora.lang.styling.line.LineBackground;
+import io.github.rosemoe.sora.lang.styling.line.LineGutterBackground;
+import io.github.rosemoe.sora.lang.styling.line.LineSideIcon;
 import ir.hanzodev1375.ghostide.codeeditors.colorscheme.GhostColorScheme;
 import ir.hanzodev1375.ghostide.codeeditors.langs.antlr4base.CodeAnalyzer;
 import ir.hanzodev1375.ghostide.codeeditors.langs.antlr4base.IncrementalToken;
@@ -18,21 +25,17 @@ public class HTMLAnalyzer extends CodeAnalyzer {
 
   public HTMLAnalyzer() {
     super(HTMLLexer.class);
-    
   }
 
   @Override
   protected int[][] getMultilineTokenStartEndTypes() {
-    
-    
-    
+
     return new int[][] {new int[] {-1}, new int[] {-1}};
   }
 
   @Override
   protected void handleIncompleteToken(IncrementalToken token) {
-    
-    
+
     token.type = HTMLLexer.IDENTIFIER;
   }
 
@@ -40,6 +43,12 @@ public class HTMLAnalyzer extends CodeAnalyzer {
   protected List<Span> generateSpans(final LineTokenizeResult<LineState, IncrementalToken> tokens) {
     final List<Span> spans = new ArrayList<>();
     int pretoken = -1;
+    //    getManagedStyles().addLineStyle(new LineSideIcon(2, new ColorDrawable(Color.CYAN)));
+    //    getManagedStyles().addLineStyle(new LineSideIcon(32, new ColorDrawable(Color.BLUE)));
+    //    getManagedStyles().addLineStyle(new LineBackground(2, new ConstColor(Color.GREEN)));
+    //    getManagedStyles().addLineStyle(new LineGutterBackground(3, new ConstColor(Color.GREEN)));
+    //    getManagedStyles().addLineStyle(new LineSideIcon(100, new
+    // ColorDrawable(Color.parseColor("#700170"))));
 
     for (int i = 0; i < tokens.tokens.size(); i++) {
       final var token = tokens.tokens.get(i);
@@ -48,13 +57,13 @@ public class HTMLAnalyzer extends CodeAnalyzer {
       final String text = token.getText();
 
       switch (type) {
-          
         case HTMLLexer.ABSTRACT:
         case HTMLLexer.ASSERT:
         case HTMLLexer.BREAK:
         case HTMLLexer.CASE:
         case HTMLLexer.CATCH:
         case HTMLLexer.CLASS:
+        case HTMLLexer.FUNCTION:
         case HTMLLexer.CONST:
         case HTMLLexer.CONTINUE:
         case HTMLLexer.DEFAULT:
@@ -91,7 +100,6 @@ public class HTMLAnalyzer extends CodeAnalyzer {
         case HTMLLexer.VOLATILE:
         case HTMLLexer.WHILE:
         case HTMLLexer.VAR:
-        case HTMLLexer.FUNCTION:
         case HTMLLexer.LET:
         case HTMLLexer.DEBUGGER:
         case HTMLLexer.YELD:
@@ -107,7 +115,6 @@ public class HTMLAnalyzer extends CodeAnalyzer {
           spans.add(Span.obtain(offset, KEYWORD));
           break;
 
-          
         case HTMLLexer.LPAREN:
         case HTMLLexer.RPAREN:
         case HTMLLexer.LBRACK:
@@ -158,30 +165,25 @@ public class HTMLAnalyzer extends CodeAnalyzer {
           spans.add(Span.obtain(offset, OPERATOR));
           break;
 
-          
         case HTMLLexer.HtmlTags:
         case HTMLLexer.HtmlTagOne:
           spans.add(Span.obtain(offset, HTML_TAG));
           break;
 
-          
         case HTMLLexer.HtmlAttr:
           spans.add(Span.obtain(offset, GhostColorScheme.ATTRIBUTE_NAME));
           break;
 
-          
         case HTMLLexer.BLOCK_COMMENT:
         case HTMLLexer.LINE_COMMENT:
           spans.add(Span.obtain(offset, COMMENT));
           break;
 
-          
         case HTMLLexer.STRING:
         case HTMLLexer.CHATREF:
           spans.add(Span.obtain(offset, LITERAL));
           break;
 
-          
         case HTMLLexer.DECIMAL_LITERAL:
         case HTMLLexer.OCT_LITERAL:
         case HTMLLexer.BINARY_LITERAL:
@@ -193,7 +195,6 @@ public class HTMLAnalyzer extends CodeAnalyzer {
           spans.add(Span.obtain(offset, LITERAL));
           break;
 
-          
         case HTMLLexer.LT:
         case HTMLLexer.GT:
         case HTMLLexer.OPEN_SLASH:
@@ -214,9 +215,23 @@ public class HTMLAnalyzer extends CodeAnalyzer {
             color = GhostColorScheme.COLORNEXTCHAR;
           } else if (pretoken == HTMLLexer.DOT) {
             color = GhostColorScheme.COLORNEXTDOT;
+          } else if (pretoken == HTMLLexer.CLASS
+              || pretoken == HTMLLexer.CLASS
+              || pretoken == HTMLLexer.ABSTRACT) {
+            color = COLORNEXTCHAR;
+          } else if (pretoken == HTMLLexer.LET
+              || pretoken == HTMLLexer.VAR
+              || pretoken == HTMLLexer.CASE
+              || pretoken == HTMLLexer.NEW
+              || pretoken == HTMLLexer.BOOLEAN) {
+            color = COLORNEXTLESS;
           } else {
             color = TEXT_NORMAL;
           }
+//          if (token.getText().equals("main")) {
+//            getManagedStyles()
+//                .addLineStyle(new LineSideIcon(token.getLine(), new ColorDrawable(Color.CYAN)));
+//          }
           spans.add(Span.obtain(offset, color));
           break;
 

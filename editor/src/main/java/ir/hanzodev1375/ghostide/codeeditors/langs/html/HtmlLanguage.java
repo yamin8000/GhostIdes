@@ -22,6 +22,10 @@ import ir.hanzodev1375.ghostide.codeeditors.langs.antlr4base.CharParser;
 import ir.hanzodev1375.ghostide.codeeditors.langs.antlr4base.SnippetCompletionItem;
 import ir.hanzodev1375.ghostide.codeeditors.lspcustomhot.Css3Server;
 import ir.hanzodev1375.ghostide.codeeditors.lspcustomhot.PathCompleter;
+import java.io.StringReader;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.Token;
+import java.io.IOException;
 import java.util.List;
 import ir.hanzodev1375.ghostide.codeeditors.lspcustomhot.CustomCompletionItem;
 
@@ -247,10 +251,33 @@ public class HtmlLanguage implements Language {
     return false;
   }
 
-  @Override
+@Override
   public int getIndentAdvance(@NonNull ContentReference text, int line, int column) {
+
+    try {
+      var lexer = new HTMLLexer(CharStreams.fromReader(new StringReader(text.getLine(line))));
+      Token token;
+      int advance = 0;
+      while (((token = lexer.nextToken()) != null && token.getType() != token.EOF)) {
+        switch (token.getType()) {
+          case HTMLLexer.LBRACE:
+          case HTMLLexer.OPEN_SLASH:
+            advance++;
+            break;
+          case HTMLLexer.SLASH_CLOSE:  
+          case HTMLLexer.RBRACE:
+            advance--;
+            break;
+        }
+      }
+      advance = Math.max(0, advance);
+      return advance * 2;
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
     return 0;
   }
+
 
   @Override
   public boolean useTab() {

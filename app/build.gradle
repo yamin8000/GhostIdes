@@ -35,8 +35,8 @@ android {
 }
 
 dependencies {
-    //coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     implementation project(path: ":editor")
+    implementation project(path: ":materialfileicon")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -49,5 +49,7 @@ dependencies {
     annotationProcessor(libs.glide.compiler) 
     implementation(libs.glide.avif.integration)
     //implementation(libs.jgit)
+    implementation("androidx.recyclerview:recyclerview-selection:1.1.0")
+
   
 }

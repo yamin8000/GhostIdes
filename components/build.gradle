@@ -1,0 +1,25 @@
+plugins {
+    id('com.android.library')
+}
+
+android {
+    namespace = 'ir.hanzodev1375.components'
+    compileSdk = 36
+    defaultConfig {
+        minSdk = 26
+        targetSdk = 36
+    }
+
+    compileOptions {
+        encoding = "UTF-8"
+        sourceCompatibility =  JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    buildFeatures {
+        aidl= true
+    }
+}
+
+dependencies {
+    
+}

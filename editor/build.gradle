@@ -7,12 +7,12 @@ android {
     namespace = 'ir.hanzodev1375.ghostide.codeeditors'
     
     buildFeatures {
-        viewBinding = true  // یا dataBinding = true
+        viewBinding = true 
     }
     
     defaultConfig {
         minSdkVersion = 26
-        targetSdkVersion = 34
+        targetSdkVersion = 36
     }
     
     buildTypes {

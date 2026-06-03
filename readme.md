@@ -1,5 +1,13 @@
 # Ghost IDE 👻
 
+
+<p align="center">
+  <img src="assets/banner.png" alt="Ghost IDE Banner" width="100%">
+</p>
+
+<p align="center">
+  Fast IDE for Mobile Developers
+</p>
 ## 📖 Overview
 
 Ghost IDE is an advanced mobile development environment built for Android developers, web developers, and scripting workflows. Unlike many mobile editors, Ghost IDE provides real tooling and compiler integrations directly inside the application.
@@ -29,19 +37,22 @@ Ghost IDE is an advanced mobile development environment built for Android develo
 - Background customization
 
 ### 🛠️ Development Tools
-- Python execution
-- PHP execution
-- Kotlin compiler
-- Java helper tools
-- Sass / SCSS / Less compilers
-- TypeScript / TSX / JSX support
-- JavaFX compiler
-- JavaCC compiler
-- Git integration
-- HTML preview support
+- Python execution soon
+- PHP execution soon
+- Kotlin compiler soon
+- Java helper tools soon
+- Sass / SCSS / Less compilers soon
+- TypeScript / TSX / JSX support soon
+- JavaFX compiler soon
+- Git integration soon
+- HTML preview support 
 
 ### 🌐 Supported Languages
-`HTML` `CSS` `JavaScript` `TypeScript` `Python` `PHP` `Java` `Kotlin` `C` `C++` `C#` `Rust` `Go` `Swift` `Ruby` `Lua` `R` `SQL` `Markdown` `Shell` `Zig` `TSX` `JSX`
+
+- [x] html
+- [x] css
+- [x] cpp
+- [x] js
 
 ---
 

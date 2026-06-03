@@ -66,13 +66,15 @@
                     android:clipToPadding="false"
                     android:id="@+id/rvfiles"
                     />
+
                 <ir.hanzodev1375.ghostide.customui.EmptyState
-                    android:id="@+id/emptystates"
-                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
+                    android:layout_width="wrap_content"
                     android:visibility="gone"
+                    android:id="@+id/emptystates"
+                    android:layout_gravity="center"
                     />
+
             </FrameLayout>
 
         </LinearLayout>
@@ -89,6 +91,15 @@
         android:layout_marginTop="16dp"
         android:id="@+id/fab"
         android:layout_gravity="bottom|right"
+        />
+
+    <include
+        layout="@layout/selection_panel"
+        android:id="@+id/selectionPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_anchor="@id/fab"
+        app:layout_anchorGravity="bottom"
         />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

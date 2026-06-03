@@ -230,25 +230,15 @@ public class CppAnalyzer extends CodeAnalyzer {
               color = COLORNEXTBRAK;
 
             } else if (pretoken == CPP14Lexer.Less || pretoken == CPP14Lexer.Greater) {
-
               color = COLORNEXTLESS;
-
-            } else if (lexer._input.LA(2) == '#') {
-
-              color = COLORNEXTCHAR;
-
-            } else if (Character.isUpperCase(token.getText().charAt(0))) {
+            }  else if (Character.isUpperCase(token.getText().charAt(0))) {
 
               var matcher = UPPERCASE_PATTERN.matcher(token.getText());
-
               if (matcher.matches()) {
-
                 color = COLORUPPERCASE;
               }
             }
-
             spans.add(Span.obtain(offset, color));
-
             break;
           }
 

@@ -60,7 +60,7 @@ public class ShapeUtil {
     return drawable;
   }
 
-  static int getcolorSurfaceContainer(View v) {
+  public static int getcolorSurfaceContainer(View v) {
     return MaterialColors.getColor(v, R.attr.colorSurfaceContainer);
   }
 
@@ -73,7 +73,7 @@ public class ShapeUtil {
     return MaterialColors.getColor(view, R.attr.colorSurface);
   }
 
-  private static int getRippleColor(View view) {
+  public static int getRippleColor(View view) {
     return MaterialColors.getColor(view, R.attr.colorSurfaceContainerHighest);
   }
 
@@ -91,5 +91,8 @@ public class ShapeUtil {
 
   private static int getSurfaceColor(Context context) {
     return MaterialColors.getColor(context, R.attr.colorSurface, 0);
+  }
+  public static int getcolorPrimaryContainer(View v ){
+    return MaterialColors.getColor(v,R.attr.colorPrimaryContainer,0);
   }
 }

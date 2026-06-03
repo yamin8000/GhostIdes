@@ -2,6 +2,8 @@ package ir.hanzodev1375.ghostide.mvvm.viewmodel;
 
 import android.app.Application;
 
+import android.os.Handler;
+import android.os.Looper;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -9,6 +11,8 @@ import androidx.lifecycle.MutableLiveData;
 import ir.hanzodev1375.ghostide.utils.FileUtil;
 import ir.hanzodev1375.ghostide.utils.PathManager;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -84,7 +88,7 @@ public class FileViewModel extends AndroidViewModel {
   }
 
   private void loadFiles(String dirPath) {
-    isLoading.setValue(true);
+    isLoading.postValue(true); // استفاده از postValue
     new Thread(
             () -> {
               List<FileManagerModel> list = new ArrayList<>();
@@ -95,7 +99,7 @@ public class FileViewModel extends AndroidViewModel {
                     files,
                     Comparator.comparing(File::isDirectory)
                         .reversed()
-                        .thenComparing(File::getName,String.CASE_INSENSITIVE_ORDER));
+                        .thenComparing(File::getName, String.CASE_INSENSITIVE_ORDER));
                 for (File file : files) {
                   String name = file.getName();
                   if (!name.startsWith(".")) {
@@ -128,5 +132,82 @@ public class FileViewModel extends AndroidViewModel {
     if (file.delete()) {
       loadFiles(currentPath.getValue());
     }
+  }
+
+  public void deleteFiles(List<FileManagerModel> items) {
+    new Thread(
+            () -> {
+              for (FileManagerModel item : items) {
+                File file = new File(item.getPath());
+                deleteRecursive(file);
+              }
+              loadFiles(currentPath.getValue());
+            })
+        .start();
+  }
+
+  private void deleteRecursive(File file) {
+    if (file.isDirectory()) {
+      File[] children = file.listFiles();
+      if (children != null) {
+        for (File child : children) deleteRecursive(child);
+      }
+    }
+    file.delete();
+  }
+
+  public void pasteFiles(
+      List<FileManagerModel> sources, String destDir, boolean isCut, OnPasteComplete callback) {
+    new Thread(
+            () -> {
+              boolean success = true;
+              File destFolder = new File(destDir);
+              if (!destFolder.exists()) destFolder.mkdirs();
+              for (FileManagerModel model : sources) {
+                File src = new File(model.getPath());
+                File dest = new File(destFolder, src.getName());
+                if (isCut) {
+                  if (!src.renameTo(dest)) {
+                    copyRecursive(src, dest);
+                    deleteRecursive(src);
+                  }
+                } else {
+                  copyRecursive(src, dest);
+                }
+              }
+              loadFiles(currentPath.getValue());
+              if (callback != null) {
+                new Handler(Looper.getMainLooper()).post(() -> callback.onComplete(success));
+              }
+            })
+        .start();
+  }
+
+  private void copyRecursive(File src, File dest) {
+    try {
+      if (src.isDirectory()) {
+        if (!dest.exists()) dest.mkdirs();
+        File[] children = src.listFiles();
+        if (children != null) {
+          for (File child : children) {
+            copyRecursive(child, new File(dest, child.getName()));
+          }
+        }
+      } else {
+        FileInputStream in = new java.io.FileInputStream(src);
+        FileOutputStream out = new java.io.FileOutputStream(dest);
+        byte[] buffer = new byte[8192];
+        int len;
+        while ((len = in.read(buffer)) != -1) out.write(buffer, 0, len);
+        in.close();
+        out.close();
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  public interface OnPasteComplete {
+    void onComplete(boolean success);
   }
 }
