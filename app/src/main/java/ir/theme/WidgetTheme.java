@@ -12,6 +12,7 @@ public class WidgetTheme {
 
   @SerializedName("accent")
   private String accent;
+ 
 
   @SerializedName("background")
   private String background;

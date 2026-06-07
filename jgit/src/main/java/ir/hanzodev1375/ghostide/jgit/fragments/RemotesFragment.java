@@ -4,22 +4,24 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import ir.hanzodev1375.ghostide.jgit.R;
 import ir.hanzodev1375.ghostide.jgit.adapter.RemoteAdapter;
 import ir.hanzodev1375.ghostide.jgit.dialogs.AddRemoteDialog;
 import ir.hanzodev1375.ghostide.jgit.jgitandroid.datamanager.GitViewModel;
 import ir.hanzodev1375.ghostide.jgit.jgitandroid.model.RemoteInfo;
+import ir.hanzodev1375.ghostide.jgit.GitHubClient; // اضافه کنید
 
 public class RemotesFragment extends Fragment {
   private GitViewModel viewModel;
   private RemoteAdapter adapter;
+  private GitHubClient gitHubClient;
 
   @Override
   public View onCreateView(
@@ -30,6 +32,8 @@ public class RemotesFragment extends Fragment {
   @Override
   public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
     viewModel = new ViewModelProvider(requireActivity()).get(GitViewModel.class);
+    gitHubClient = new GitHubClient(requireContext());
+
     RecyclerView recyclerView = view.findViewById(R.id.recyclerViewRemotes);
     recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
     adapter = new RemoteAdapter();
@@ -41,12 +45,22 @@ public class RemotesFragment extends Fragment {
         new RemoteAdapter.OnRemoteActionListener() {
           @Override
           public void onRemove(RemoteInfo remote) {
-            viewModel.removeRemote(remote.getName());
+            new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Remove Remote")
+                .setMessage("Remove '" + remote.getName() + "'?")
+                .setPositiveButton("Remove", (d, w) -> viewModel.removeRemote(remote.getName()))
+                .setNegativeButton("Cancel", null)
+                .show();
           }
 
           @Override
-          public void onPushPull(RemoteInfo remote) {
-            /* می‌توان دیالوگ Push/Pull باز کرد */
+          public void onPush(RemoteInfo remote) {
+            performPush(remote);
+          }
+
+          @Override
+          public void onPull(RemoteInfo remote) {
+            performPull(remote);
           }
         });
 
@@ -58,6 +72,67 @@ public class RemotesFragment extends Fragment {
           if (result != null)
             Toast.makeText(getContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
         });
+
+    viewModel.pushPullResult.observe(
+        getViewLifecycleOwner(),
+        result -> {
+          if (result != null) {
+            Toast.makeText(getContext(), result.getMessage(), Toast.LENGTH_LONG).show();
+            if (result.isSuccess() && "pull".equals(result.getOperation())) {
+              viewModel.refreshAll();
+            }
+          }
+        });
+  }
+
+  private void performPush(RemoteInfo remote) {
+    if (viewModel.changedFiles.getValue() != null && !viewModel.changedFiles.getValue().isEmpty()) {
+      new MaterialAlertDialogBuilder(requireContext())
+          .setTitle("Uncommitted changes")
+          .setMessage("You have uncommitted changes. Please commit them before pushing.")
+          .setPositiveButton("OK", null)
+          .show();
+      return;
+    }
+
+    String branch = viewModel.currentBranch.getValue();
+    if (branch == null || branch.isEmpty()) {
+      Toast.makeText(getContext(), "Could not get current branch", Toast.LENGTH_SHORT).show();
+      return;
+    }
+
+    String token = gitHubClient.getToken(); 
+    if (token == null || token.isEmpty()) {
+      Toast.makeText(
+              getContext(), "GitHub token not found. Please login first.", Toast.LENGTH_SHORT)
+          .show();
+      return;
+    }
+    viewModel.push(remote.getName(), branch, "oauth2", token);
+  }
+
+  private void performPull(RemoteInfo remote) {
+    if (viewModel.changedFiles.getValue() != null && !viewModel.changedFiles.getValue().isEmpty()) {
+      new MaterialAlertDialogBuilder(requireContext())
+          .setTitle("Uncommitted changes")
+          .setMessage("You have uncommitted changes. Pull may cause conflicts. Continue anyway?")
+          .setPositiveButton("Continue", (d, w) -> doPull(remote))
+          .setNegativeButton("Cancel", null)
+          .show();
+    } else {
+      doPull(remote);
+    }
+  }
+
+  private void doPull(RemoteInfo remote) {
+    String token = gitHubClient.getToken();
+    if (token == null || token.isEmpty()) {
+      Toast.makeText(
+              getContext(), "GitHub token not found. Please login first.", Toast.LENGTH_SHORT)
+          .show();
+      return;
+    }
+    viewModel.pull(remote.getName(), null, "oauth2", token);
   }
 
   private void showAddRemoteDialog() {
