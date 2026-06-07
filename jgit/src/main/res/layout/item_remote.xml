@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     android:layout_height="wrap_content"
+     android:layout_width="match_parent"
+     android:padding="8dp"
+     android:orientation="vertical">
+
+    <TextView
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:textAppearance="?attr/textAppearanceTitleMedium"
+         android:id="@+id/tvRemoteName" />
+
+    <TextView
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:layout_marginTop="4dp"
+         android:id="@+id/tvRemoteUrl" />
+
+    <Button
+         android:layout_height="wrap_content"
+         android:layout_width="wrap_content"
+         android:layout_marginTop="4dp"
+         android:id="@+id/btnRemoveRemote"
+         android:text="Remove" />
+
+</LinearLayout>

@@ -1,0 +1,69 @@
+package ir.hanzodev1375.ghostide.jgit.adapter;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+import java.util.ArrayList;
+import java.util.List;
+import ir.hanzodev1375.ghostide.jgit.R;
+import ir.hanzodev1375.ghostide.jgit.jgitandroid.model.RemoteInfo;
+
+public class RemoteAdapter extends RecyclerView.Adapter<RemoteAdapter.ViewHolder> {
+  private List<RemoteInfo> remotes = new ArrayList<>();
+  private OnRemoteActionListener listener;
+
+  public interface OnRemoteActionListener {
+    void onRemove(RemoteInfo remote);
+
+    void onPushPull(RemoteInfo remote);
+  }
+
+  public void setOnRemoteActionListener(OnRemoteActionListener listener) {
+    this.listener = listener;
+  }
+
+  public void submitList(List<RemoteInfo> list) {
+    remotes = list != null ? list : new ArrayList<>();
+    notifyDataSetChanged();
+  }
+
+  @NonNull
+  @Override
+  public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    View view =
+        LayoutInflater.from(parent.getContext()).inflate(R.layout.item_remote, parent, false);
+    return new ViewHolder(view);
+  }
+
+  @Override
+  public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+    RemoteInfo remote = remotes.get(position);
+    holder.tvName.setText(remote.getName());
+    holder.tvUrl.setText(remote.getFetchUrl());
+    holder.btnRemove.setOnClickListener(
+        v -> {
+          if (listener != null) listener.onRemove(remote);
+        });
+  }
+
+  @Override
+  public int getItemCount() {
+    return remotes.size();
+  }
+
+  static class ViewHolder extends RecyclerView.ViewHolder {
+    TextView tvName, tvUrl;
+    Button btnRemove;
+
+    ViewHolder(View itemView) {
+      super(itemView);
+      tvName = itemView.findViewById(R.id.tvRemoteName);
+      tvUrl = itemView.findViewById(R.id.tvRemoteUrl);
+      btnRemove = itemView.findViewById(R.id.btnRemoveRemote);
+    }
+  }
+}

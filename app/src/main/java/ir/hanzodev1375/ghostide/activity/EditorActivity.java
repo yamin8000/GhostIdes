@@ -31,6 +31,7 @@ import com.blankj.utilcode.util.FileIOUtils;
 import ir.hanzodev1375.ghostide.customui.TabCustomView;
 import ir.hanzodev1375.ghostide.jgit.GitHubClient;
 import ir.hanzodev1375.ghostide.jgit.GitHubProfileSheet;
+import ir.hanzodev1375.ghostide.jgit.fragments.GitBottomSheetFragment;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -352,6 +353,7 @@ public class EditorActivity extends BaseCompat {
 
   void stepToolbar() {
     toolbarModel.add(new ToolbarModel(R.drawable.outline_search, "search"));
+    toolbarModel.add(new ToolbarModel(R.drawable.ic_back, "git"));
     toolbarModel.add(new ToolbarModel(R.drawable.outline_undo, "undo"));
     toolbarModel.add(new ToolbarModel(R.drawable.outline_redo, "redo"));
     toolbarModel.add(new ToolbarModel(R.drawable.more_vert, "more"));
@@ -361,13 +363,14 @@ public class EditorActivity extends BaseCompat {
             (view, m, pos) -> {
               switch (pos) {
                 case 0 -> stepSearch();
-                case 1 -> {
+                case 1 -> showGitBottomSheet();
+                case 2 -> {
                   if (getEditor().canUndo()) getEditor().undo();
                 }
-                case 2 -> {
+                case 3 -> {
                   if (getEditor().canRedo()) getEditor().redo();
                 }
-                case 3 -> setupMenuCalltoAction(view);
+                case 4 -> setupMenuCalltoAction(view);
               }
             },
             EditorActivity.this);
@@ -392,6 +395,31 @@ public class EditorActivity extends BaseCompat {
           }
         });
     binding.editorSearch.showAndHide();
+  }
+
+  private void showGitBottomSheet() {
+    String repoPath = findGitRepositoryPath();
+    if (repoPath == null) {
+      Toast.makeText(this, "هیچ مخزن گیتی در مسیر فایل جاری یافت نشد", Toast.LENGTH_LONG).show();
+      return;
+    }
+    GitBottomSheetFragment bottomSheet = GitBottomSheetFragment.newInstance(repoPath);
+    bottomSheet.show(getSupportFragmentManager(), "git_bottom_sheet");
+  }
+
+  private String findGitRepositoryPath() {
+    String currentFilePath = getCurrentFilePath();
+    if (currentFilePath == null) return null;
+    File currentFile = new File(currentFilePath);
+    File dir = currentFile.isDirectory() ? currentFile : currentFile.getParentFile();
+    while (dir != null) {
+      File gitDir = new File(dir, ".git");
+      if (gitDir.exists() && gitDir.isDirectory()) {
+        return dir.getAbsolutePath();
+      }
+      dir = dir.getParentFile();
+    }
+    return null;
   }
 
   void setupMenuCalltoAction(View v) {
