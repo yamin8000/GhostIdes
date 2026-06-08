@@ -1,13 +1,20 @@
 package ir.hanzodev1375.ghostide.ai.chat;
 
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
+
 import java.util.List;
+
 import ir.hanzodev1375.ghostide.ai.R;
 import ir.hanzodev1375.ghostide.ai.model.ChatMessage;
 
@@ -43,15 +50,35 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
   @Override
   public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
     ChatMessage msg = messages.get(position);
+
     if (holder instanceof UserViewHolder) {
-      ((UserViewHolder) holder).tvMessage.setText(msg.getContent());
+      UserViewHolder userHolder = (UserViewHolder) holder;
+
+      // نمایش متن
+      if (!TextUtils.isEmpty(msg.getContent())) {
+        userHolder.tvMessage.setText(msg.getContent());
+        userHolder.tvMessage.setVisibility(View.VISIBLE);
+      } else {
+        userHolder.tvMessage.setVisibility(View.GONE);
+      }
+
+      // نمایش عکس
+      if (msg.getImageUri() != null && !msg.getImageUri().isEmpty()) {
+        userHolder.ivImage.setVisibility(View.VISIBLE);
+        Glide.with(userHolder.itemView.getContext())
+            .load(msg.getImageUri())
+            .centerCrop()
+            .into(userHolder.ivImage);
+      } else {
+        userHolder.ivImage.setVisibility(View.GONE);
+      }
+
     } else if (holder instanceof AiViewHolder) {
       ((AiViewHolder) holder).tvMessage.setText(msg.getContent());
       ((AiViewHolder) holder).tvProvider.setText(msg.getProvider().toUpperCase());
     } else if (holder instanceof ErrorViewHolder) {
       ((ErrorViewHolder) holder).tvError.setText(msg.getContent());
     }
-    // LoadingViewHolder نیازی به bind ندارد، ProgressBar به صورت خودکار چرخش دارد
   }
 
   @Override
@@ -61,10 +88,12 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
   static class UserViewHolder extends RecyclerView.ViewHolder {
     TextView tvMessage;
+    ImageView ivImage;
 
     UserViewHolder(@NonNull View itemView) {
       super(itemView);
       tvMessage = itemView.findViewById(R.id.tv_message_user);
+      ivImage = itemView.findViewById(R.id.iv_user_image);
     }
   }
 
