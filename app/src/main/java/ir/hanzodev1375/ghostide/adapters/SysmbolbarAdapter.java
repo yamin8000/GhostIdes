@@ -95,7 +95,7 @@ public class SysmbolbarAdapter extends RecyclerView.Adapter<SysmbolbarAdapter.Vi
             public void onClick(View view) {
               if (model.containsKey("Tab")) {
                 sysbarInsertId.setText(model.get("Tab").toString());
-                tabview.TAB("\t");
+                tabview.TAB(sysbarInsertId.getText().toString());
 
               } else {
                 sysbarInsertId.setText(model.get("post").toString());

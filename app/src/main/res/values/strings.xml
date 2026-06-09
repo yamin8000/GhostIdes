@@ -139,4 +139,8 @@
     <string name="not_set">Not set</string>
     <string name="key_saved">API key saved</string>
     <string name="key_cleared">API key cleared</string>
+    <string name="editor_translate">ترجمه</string>
+    <string name="pref_translate_target_lang">زبان مقصد ترجمه</string>
+    <string name="pref_translate_target_lang_desc">زبان مقصد هنگام ترجمه متن انتخابی</string>
+
 </resources>

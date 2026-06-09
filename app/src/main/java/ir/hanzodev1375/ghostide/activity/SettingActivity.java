@@ -27,6 +27,7 @@ import ir.hanzodev1375.ghostide.R;
 import ir.hanzodev1375.ghostide.adapters.SettingsAdapter;
 import ir.hanzodev1375.ghostide.ai.utils.AiConstants;
 import ir.hanzodev1375.ghostide.ai.utils.AiPreferencesUtils;
+import ir.hanzodev1375.ghostide.codeeditors.util.TranslateLanguages;
 import ir.hanzodev1375.ghostide.customui.ExpandableLayout;
 import ir.hanzodev1375.ghostide.jgit.GitHubClient;
 import ir.hanzodev1375.ghostide.models.SettingItem;
@@ -93,6 +94,7 @@ public class SettingActivity extends BaseCompat {
           if (position == 17) showTabSizeDialog();
           else if (position == 18) showLineHeightDialog();
           else if (position == 19) showCursorBlinkDialog();
+          else if (position == 21) showTranslateLanguageDialog();
         });
 
     appAdapter.setOnItemClickListener(
@@ -347,6 +349,16 @@ public class SettingActivity extends BaseCompat {
             prefs.enableMiniMap(),
             0,
             prefs::setMiniMap));
+
+    String currentLangName = TranslateLanguages.getNameByCode(prefs.getTranslateTargetLang());
+    items.add(
+        new SettingItem(
+            getString(R.string.pref_translate_target_lang),
+            getString(R.string.pref_translate_target_lang_desc) + "\n" + currentLangName,
+            false,
+            0,
+            null));
+
     return items;
   }
 
@@ -490,6 +502,36 @@ public class SettingActivity extends BaseCompat {
         .setView(view)
         .setPositiveButton(
             R.string.ok, (d, w) -> prefs.setCursorBlinkPeriod((int) slider.getValue()))
+        .setNegativeButton(R.string.cancel, null)
+        .show();
+  }
+
+  private void showTranslateLanguageDialog() {
+    String[] names = TranslateLanguages.NAMES;
+    String[] codes = TranslateLanguages.CODES;
+    String saved = prefs.getTranslateTargetLang();
+    int checked = 0;
+    for (int i = 0; i < codes.length; i++) {
+      if (codes[i].equals(saved)) {
+        checked = i;
+        break;
+      }
+    }
+    new MaterialAlertDialogBuilder(this)
+        .setTitle(R.string.pref_translate_target_lang)
+        .setSingleChoiceItems(
+            names,
+            checked,
+            (dialog, which) -> {
+              prefs.setTranslateTargetLang(codes[which]);
+              dialog.dismiss();
+              SettingItem item = editorAdapter.getItemAtPosition(21);
+              if (item != null) {
+                item.setDescription(
+                    getString(R.string.pref_translate_target_lang_desc) + "\n" + names[which]);
+                editorAdapter.notifyItemChanged(21);
+              }
+            })
         .setNegativeButton(R.string.cancel, null)
         .show();
   }

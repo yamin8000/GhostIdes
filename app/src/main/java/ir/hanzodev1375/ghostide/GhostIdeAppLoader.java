@@ -18,7 +18,6 @@ public class GhostIdeAppLoader extends Application {
 
   private static Context mApplicationContext;
   private static GhostIdeAppLoader loader;
-  private Thread.UncaughtExceptionHandler defaultExceptionHandler;
   private final StringBuilder softwareInfo = new StringBuilder();
 
   public static Context getContext() {
@@ -35,56 +34,19 @@ public class GhostIdeAppLoader extends Application {
     loader = this;
     mApplicationContext = getApplicationContext();
 
-    // راه‌اندازی ThemeEngine و اعمال به تمام Activityها
     ThemeEngine.applyToActivities(this);
 
-    softwareInfo
-        .append("SDK: ")
-        .append(Build.VERSION.SDK_INT)
-        .append("\n")
-        .append("Android: ")
-        .append(Build.VERSION.RELEASE)
-        .append("\n")
-        .append("Model: ")
-        .append(Build.MODEL)
-        .append("\n")
-        .append("Incremental: ")
-        .append(Build.VERSION.INCREMENTAL)
-        .append("\n");
-
-    defaultExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(
-        (thread, throwable) -> {
-          String stackTrace = Log.getStackTraceString(throwable);
-          String dateTime = Calendar.getInstance().getTime().toString();
-          Intent intent = new Intent(mApplicationContext, ErrorManagerActivity.class);
-          intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-          intent.putExtra("Error", stackTrace);
-          intent.putExtra("Date", dateTime);
-          intent.putExtra("Software", softwareInfo.toString());
-
-          new Handler(Looper.getMainLooper())
-              .postDelayed(
-                  () -> {
-                    try {
-                      mApplicationContext.startActivity(intent);
-                    } catch (Exception e) {
-                      e.printStackTrace();
-                    }
-                  },
-                  500);
-
-          new Handler(Looper.getMainLooper())
-              .postDelayed(
-                  () -> {
-                    if (defaultExceptionHandler != null) {
-                      defaultExceptionHandler.uncaughtException(thread, throwable);
-                    } else {
-                      Process.killProcess(Process.myPid());
-                      System.exit(1);
-                    }
-                  },
-                  1500);
+        new Thread.UncaughtExceptionHandler() {
+          @Override
+          public void uncaughtException(Thread thread, Throwable throwable) {
+            Intent intent = new Intent(getApplicationContext(), ErrorManagerActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            intent.putExtra("error", Log.getStackTraceString(throwable));
+            startActivity(intent);
+            Process.killProcess(Process.myPid());
+            System.exit(1);
+          }
         });
   }
 

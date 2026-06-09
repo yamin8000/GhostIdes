@@ -45,6 +45,7 @@ import java.util.HashSet;
 import java.util.List;
 import ir.hanzodev1375.ghostide.R;
 import java.util.Set;
+import ninja.coder.appuploader.main.appupdate.UpadteAppView;
 
 public class FileManagerActivity extends BaseCompat {
 
@@ -58,6 +59,7 @@ public class FileManagerActivity extends BaseCompat {
   private List<FileManagerModel> pendingClipboard = new ArrayList<>();
   private SelectionPanelBinding selectionPanelBinding;
   private FileManagerModel fileModels;
+  private UpadteAppView app;
   private Set<String> itemname =
       new HashSet<>(Arrays.asList(".html", ".java", ".cpp", ".css", ".js", ".py"));
 
@@ -83,6 +85,7 @@ public class FileManagerActivity extends BaseCompat {
     bind.rvfiles.setLayoutManager(new LinearLayoutManager(this));
     bind.rvfiles.setAdapter(adapter);
     bind.rvfiles.addItemDecoration(new MarginItemDecoration(this));
+    app = new UpadteAppView(this, bind.downloader, () -> {});
 
     adapter.setupSelectionTracker(bind.rvfiles);
     viewModel

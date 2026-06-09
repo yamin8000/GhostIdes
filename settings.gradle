@@ -25,3 +25,4 @@ include(':materialfileicon')
 include(':aimodel')
 include ':jgit'
 include ':javac'
+include ':prddownloader'

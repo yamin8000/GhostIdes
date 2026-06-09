@@ -14,7 +14,6 @@ import android.view.View;
 import android.widget.Toast;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.view.ViewCompat;
-import androidx.core.graphics.Insets;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -48,7 +47,6 @@ import ir.hanzodev1375.ghostide.fragments.EditorFragment;
 import ir.hanzodev1375.ghostide.models.TabModel;
 import ir.hanzodev1375.ghostide.models.ToolbarModel;
 import ir.hanzodev1375.ghostide.plugin.PluginManager;
-import ir.hanzodev1375.ghostide.utils.FileUtil;
 import ir.theme.ThemeManager;
 import ir.theme.ThemeUtils;
 
@@ -66,6 +64,7 @@ public class EditorActivity extends BaseCompat {
   private ToolbarListAdapter listAdapter;
   private boolean isShowSys = false;
   private List<ToolbarModel> toolbarModel = new ArrayList<>();
+  
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -98,7 +97,6 @@ public class EditorActivity extends BaseCompat {
     }
     stepToolbar();
     setupKeyboardListener();
-
     GitHubClient gitHub = new GitHubClient(this);
     if (gitHub.isLoggedIn()) {
       binding.userName.setText(gitHub.getName());
@@ -353,7 +351,8 @@ public class EditorActivity extends BaseCompat {
 
   void stepToolbar() {
     toolbarModel.add(new ToolbarModel(R.drawable.outline_search, "search"));
-    toolbarModel.add(new ToolbarModel(com.bluewhaleyt.materialfileicon.R.drawable.ic_material_git, "git"));
+    toolbarModel.add(
+        new ToolbarModel(com.bluewhaleyt.materialfileicon.R.drawable.ic_material_git, "git"));
     toolbarModel.add(new ToolbarModel(R.drawable.outline_undo, "undo"));
     toolbarModel.add(new ToolbarModel(R.drawable.outline_redo, "redo"));
     toolbarModel.add(new ToolbarModel(R.drawable.more_vert, "more"));
@@ -484,6 +483,7 @@ public class EditorActivity extends BaseCompat {
             if (tab != null && !tab.isSelected()) tab.select();
             binding.symbolBarContainer.bindEditor(getEditor());
             saveCurrentPosition(position);
+            
           }
         });
   }

@@ -115,6 +115,18 @@ public class PreferencesUtils {
         .getBoolean(Constants.SharedPreferenceKeys.KEY_CODE_EDITOR_HARDWARE_ACCELERATION, false);
   }
 
+  public String getTranslateTargetLang() {
+    return getDefaultPreferences()
+        .getString(Constants.SharedPreferenceKeys.KEY_TRANSLATE_TARGET_LANG, "en");
+  }
+
+  public void setTranslateTargetLang(String langCode) {
+    getDefaultPreferences()
+        .edit()
+        .putString(Constants.SharedPreferenceKeys.KEY_TRANSLATE_TARGET_LANG, langCode)
+        .apply();
+  }
+
   public boolean enableLineNumbers() {
     return getDefaultPreferences()
         .getBoolean(Constants.SharedPreferenceKeys.KEY_CODE_EDITOR_LINE_NUMBERS, true);

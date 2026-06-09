@@ -16,9 +16,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see https://www.gnu.org/licenses/
- *
- * If you have more questions, feel free to message Etido Peter if you have any
- * questions or need additional information. Email: euptron@gmail.com
  */
 
 package com.eup.codeopsstudio.editor.langs.widget.component;
@@ -26,20 +23,17 @@ package com.eup.codeopsstudio.editor.langs.widget.component;
 import android.annotation.SuppressLint;
 import android.graphics.RectF;
 import android.graphics.drawable.GradientDrawable;
+import android.os.AsyncTask;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.TooltipCompat;
-import io.github.rosemoe.sora.event.ColorSchemeUpdateEvent;
-import io.github.rosemoe.sora.widget.schemes.EditorColorScheme;
-import ir.hanzodev1375.ghostide.codeeditors.IdeEditor;
-import ir.hanzodev1375.ghostide.codeeditors.R;
-import com.google.android.material.color.MaterialColors;
-import com.google.android.material.elevation.SurfaceColors;
 
+import io.github.rosemoe.sora.event.ColorSchemeUpdateEvent;
 import io.github.rosemoe.sora.event.HandleStateChangeEvent;
 import io.github.rosemoe.sora.event.InterceptTarget;
 import io.github.rosemoe.sora.event.LongPressEvent;
@@ -48,17 +42,33 @@ import io.github.rosemoe.sora.event.SelectionChangeEvent;
 import io.github.rosemoe.sora.event.Unsubscribe;
 import io.github.rosemoe.sora.text.Cursor;
 import io.github.rosemoe.sora.widget.EditorTouchEventHandler;
+import io.github.rosemoe.sora.widget.component.EditorAutoCompletion;
 import io.github.rosemoe.sora.widget.component.EditorTextActionWindow;
+import io.github.rosemoe.sora.widget.schemes.EditorColorScheme;
+
+import ir.hanzodev1375.ghostide.codeeditors.IdeEditor;
+import ir.hanzodev1375.ghostide.codeeditors.R;
+import ir.hanzodev1375.ghostide.codeeditors.setting.PreferencesUtils;
+import ir.hanzodev1375.ghostide.codeeditors.util.TranslateLanguages;
+
+import ir.hanzodev1375.ghostide.codeeditors.util.TranslateTask;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+
+import org.json.JSONArray;
 
 /**
  * This window will show when selecting text to present text actions.
  *
- * @author Etido Peter
+ * @author Ghost
  */
 public class CustomEditorTextActionWindow extends EditorTextActionWindow {
 
   private static final long DELAY = 200;
-  private final IdeEditor editor; // was code editor
+  private final IdeEditor editor;
   private final ImageButton pasteBtn;
   private final ImageButton copyBtn;
   private final ImageButton cutBtn;
@@ -66,6 +76,7 @@ public class CustomEditorTextActionWindow extends EditorTextActionWindow {
   private final ImageButton longSelectBtn;
   private final ImageButton expandSelectionBtn;
   private final ImageButton formatBtn;
+  private final ImageButton translateBtn;
   private final View rootView;
   private final EditorTouchEventHandler handler;
   private long lastScroll;
@@ -73,19 +84,13 @@ public class CustomEditorTextActionWindow extends EditorTextActionWindow {
   private int lastCause;
 
   private boolean enabled = true;
-  private int windowCornerRadius = 8; // original 5 | 32 gives rounded effect
+  private int windowCornerRadius = 8;
 
-  /**
-   * Create a panel for the given editor
-   *
-   * @param editor Target editor
-   */
   public CustomEditorTextActionWindow(IdeEditor editor) {
     super(editor);
     this.editor = editor;
     handler = editor.getEventHandler();
 
-    // Since popup window does provide decor view, we have to pass null to this method
     @SuppressLint("InflateParams")
     View root =
         LayoutInflater.from(editor.getContext())
@@ -98,6 +103,7 @@ public class CustomEditorTextActionWindow extends EditorTextActionWindow {
     longSelectBtn = root.findViewById(R.id.panel_btn_long_select);
     expandSelectionBtn = root.findViewById(R.id.panel_btn_expand_selection);
     formatBtn = root.findViewById(R.id.panel_btn_format);
+    translateBtn = root.findViewById(R.id.panel_btn_translate); // ← جدید
 
     pasteBtn.setOnClickListener(this);
     copyBtn.setOnClickListener(this);
@@ -106,46 +112,16 @@ public class CustomEditorTextActionWindow extends EditorTextActionWindow {
     longSelectBtn.setOnClickListener(this);
     expandSelectionBtn.setOnClickListener(this);
     formatBtn.setOnClickListener(this);
-    EditorColorScheme colors = editor.getColorScheme();
+    translateBtn.setOnClickListener(this);
+    applyColorScheme(root, editor.getColorScheme());
     editor.subscribeEvent(
         ColorSchemeUpdateEvent.class,
-        (event, unsubscribe) -> {
-          //reload theme in chage
-          EditorColorScheme newScheme = event.getColorScheme();
-          GradientDrawable gd = new GradientDrawable();
-          gd.setCornerRadius(windowCornerRadius * editor.getDpUnit());
-          gd.setColor(newScheme.getColor(EditorColorScheme.COMPLETION_WND_BACKGROUND));
-          gd.setStroke(1, newScheme.getColor(EditorColorScheme.COMPLETION_WND_CORNER));
-          root.setBackground(gd);
+        (event, unsubscribe) -> applyColorScheme(root, event.getColorScheme()));
 
-          int textColor = newScheme.getColor(EditorColorScheme.COMPLETION_WND_TEXT_SECONDARY);
-          setColorFilterById(textColor, pasteBtn);
-          setColorFilterById(textColor, copyBtn);
-          setColorFilterById(textColor, cutBtn);
-          setColorFilterById(textColor, expandSelectionBtn);
-          setColorFilterById(textColor, longSelectBtn);
-          setColorFilterById(textColor, formatBtn);
-          setColorFilterById(textColor, selectAllBtn);
-        });
-    EditorColorScheme newScheme = editor.getColorScheme();
-    GradientDrawable gd = new GradientDrawable();
-    gd.setCornerRadius(windowCornerRadius * editor.getDpUnit());
-    gd.setColor(newScheme.getColor(EditorColorScheme.COMPLETION_WND_BACKGROUND));
-    gd.setStroke(1, newScheme.getColor(EditorColorScheme.COMPLETION_WND_CORNER));
-    root.setBackground(gd);
-    int textColor = newScheme.getColor(EditorColorScheme.COMPLETION_WND_TEXT_SECONDARY);
-    setColorFilterById(textColor, pasteBtn);
-    setColorFilterById(textColor, copyBtn);
-    setColorFilterById(textColor, cutBtn);
-    setColorFilterById(textColor, expandSelectionBtn);
-    setColorFilterById(textColor, longSelectBtn);
-    setColorFilterById(textColor, formatBtn);
-    setColorFilterById(textColor, selectAllBtn);
     setContentView(root);
     setSize(0, (int) (this.editor.getDpUnit() * 48));
-
     rootView = root;
-    //  editor.subscribeEvent(SelectionChangeEvent.class, this);
+
     editor.subscribeEvent(
         ScrollEvent.class,
         ((event, unsubscribe) -> {
@@ -181,7 +157,6 @@ public class CustomEditorTextActionWindow extends EditorTextActionWindow {
               && event.getHandleType() == HandleStateChangeEvent.HANDLE_TYPE_INSERT
               && !event.isHeld()) {
             displayWindow();
-            // Also, post to hide the window on handle disappearance
             editor.postDelayedInLifecycle(
                 new Runnable() {
                   @Override
@@ -201,6 +176,24 @@ public class CustomEditorTextActionWindow extends EditorTextActionWindow {
     getPopup().setAnimationStyle(io.github.rosemoe.sora.R.style.text_action_popup_animation);
   }
 
+  private void applyColorScheme(View root, EditorColorScheme scheme) {
+    GradientDrawable gd = new GradientDrawable();
+    gd.setCornerRadius(windowCornerRadius * editor.getDpUnit());
+    gd.setColor(scheme.getColor(EditorColorScheme.COMPLETION_WND_BACKGROUND));
+    gd.setStroke(1, scheme.getColor(EditorColorScheme.COMPLETION_WND_CORNER));
+    root.setBackground(gd);
+
+    int textColor = scheme.getColor(EditorColorScheme.COMPLETION_WND_TEXT_SECONDARY);
+    setColorFilterById(textColor, pasteBtn);
+    setColorFilterById(textColor, copyBtn);
+    setColorFilterById(textColor, cutBtn);
+    setColorFilterById(textColor, expandSelectionBtn);
+    setColorFilterById(textColor, longSelectBtn);
+    setColorFilterById(textColor, formatBtn);
+    setColorFilterById(textColor, selectAllBtn);
+    setColorFilterById(textColor, translateBtn);
+  }
+
   @Override
   public boolean isEnabled() {
     return enabled;
@@ -209,36 +202,19 @@ public class CustomEditorTextActionWindow extends EditorTextActionWindow {
   @Override
   public void setEnabled(boolean enabled) {
     this.enabled = enabled;
-    if (!enabled) {
-      dismiss();
-    }
+    if (!enabled) dismiss();
   }
 
-  /**
-   * Get the view root of the panel.
-   *
-   * <p>Root view is {@link android.widget.LinearLayout} Inside is a {@link
-   * android.widget.HorizontalScrollView}
-   *
-   * @see R.id#panel_root
-   * @see R.id#panel_btn_select_all
-   * @see R.id#panel_btn_copy
-   * @see R.id#panel_btn_cut
-   * @see R.id#panel_btn_paste
-   */
   @Override
   public ViewGroup getView() {
     return (ViewGroup) getPopup().getContentView();
   }
 
   public void onReceive(@NonNull SelectionChangeEvent event, @NonNull Unsubscribe unsubscribe) {
-    if (handler.hasAnyHeldHandle()) {
-      return;
-    }
+    if (handler.hasAnyHeldHandle()) return;
     lastCause = event.getCause();
 
     if (event.isSelected()) {
-      // Always post show. See #193
       if (event.getCause() != SelectionChangeEvent.CAUSE_SEARCH) {
         editor.postInLifecycle(this::displayWindow);
       } else {
@@ -273,9 +249,7 @@ public class CustomEditorTextActionWindow extends EditorTextActionWindow {
     if (cursor.isSelected()) {
       RectF leftRect = editor.getLeftHandleDescriptor().position;
       RectF rightRect = editor.getRightHandleDescriptor().position;
-      int top1 = selectTopRect(leftRect);
-      int top2 = selectTopRect(rightRect);
-      top = Math.min(top1, top2);
+      top = Math.min(selectTopRect(leftRect), selectTopRect(rightRect));
     } else {
       top = selectTopRect(editor.getInsertHandleDescriptor().position);
     }
@@ -300,14 +274,17 @@ public class CustomEditorTextActionWindow extends EditorTextActionWindow {
 
   private void updateButtonState() {
     pasteBtn.setEnabled(editor.hasClip());
-    copyBtn.setVisibility(editor.getCursor().isSelected() ? View.VISIBLE : View.GONE);
+    boolean isSelected = editor.getCursor().isSelected();
+    boolean isEditable = editor.isEditable();
+
+    copyBtn.setVisibility(isSelected ? View.VISIBLE : View.GONE);
     formatBtn.setVisibility(View.VISIBLE);
-    cutBtn.setVisibility(
-        (editor.getCursor().isSelected() && editor.isEditable()) ? View.VISIBLE : View.GONE);
-    pasteBtn.setVisibility(editor.isEditable() ? View.VISIBLE : View.GONE);
-    longSelectBtn.setVisibility(
-        (!editor.getCursor().isSelected() && editor.isEditable()) ? View.VISIBLE : View.GONE);
-    expandSelectionBtn.setVisibility((editor.getCursor().isSelected()) ? View.VISIBLE : View.GONE);
+    cutBtn.setVisibility((isSelected && isEditable) ? View.VISIBLE : View.GONE);
+    pasteBtn.setVisibility(isEditable ? View.VISIBLE : View.GONE);
+    longSelectBtn.setVisibility((!isSelected && isEditable) ? View.VISIBLE : View.GONE);
+    expandSelectionBtn.setVisibility(View.GONE);
+    translateBtn.setVisibility(isSelected ? View.VISIBLE : View.GONE);
+
     rootView.measure(
         View.MeasureSpec.makeMeasureSpec(1000000, View.MeasureSpec.AT_MOST),
         View.MeasureSpec.makeMeasureSpec(100000, View.MeasureSpec.AT_MOST));
@@ -316,9 +293,7 @@ public class CustomEditorTextActionWindow extends EditorTextActionWindow {
 
   @Override
   public void show() {
-    if (!enabled || editor.getSnippetController().isInSnippet()) {
-      return;
-    }
+    if (!enabled || editor.getSnippetController().isInSnippet()) return;
     super.show();
   }
 
@@ -331,9 +306,7 @@ public class CustomEditorTextActionWindow extends EditorTextActionWindow {
       return;
     } else if (id == R.id.panel_btn_cut) {
       attachTooltip(cutBtn, "Cut");
-      if (editor.getCursor().isSelected()) {
-        editor.cutText();
-      }
+      if (editor.getCursor().isSelected()) editor.cutText();
     } else if (id == R.id.panel_btn_paste) {
       attachTooltip(pasteBtn, "Paste");
       editor.pasteText();
@@ -359,12 +332,65 @@ public class CustomEditorTextActionWindow extends EditorTextActionWindow {
       if (editor.getEditable()) {
         // TODO: Handle
       }
+    } else if (id == R.id.panel_btn_translate) {
+      attachTooltip(translateBtn, "Translate");
+      handleTranslate();
+      return;
     }
     dismiss();
   }
 
+  public String getSelectedText() {
+    Cursor cursor = editor.getCursor();
+    return editor
+        .getText()
+        .subContent(
+            cursor.getLeftLine(),
+            cursor.getLeftColumn(),
+            cursor.getRightLine(),
+            cursor.getRightColumn())
+        .toString();
+  }
+
+  private void handleTranslate() {
+    String selectedText = getSelectedText();
+    if (selectedText == null || selectedText.isEmpty()) {
+      Toast.makeText(editor.getContext(), "متنی انتخاب نشده است", Toast.LENGTH_SHORT).show();
+      dismiss();
+      return;
+    }
+
+    PreferencesUtils prefs = new PreferencesUtils(editor.getContext());
+    String targetLang = prefs.getTranslateTargetLang();
+
+    dismiss();
+    new TranslateTask(
+            selectedText,
+            targetLang,
+            new TranslateTask.Callback() {
+              @Override
+              public void onSuccess(String translatedText) {
+                editor.post(
+                    () -> {
+                      if (editor.getCursor().isSelected()) {
+                        editor.deleteText();
+                      }
+                      editor.insertText(translatedText, translatedText.length());
+                    });
+              }
+
+              @Override
+              public void onFailure(String error) {
+                editor.post(
+                    () ->
+                        Toast.makeText(editor.getContext(), "error: " + error, Toast.LENGTH_SHORT)
+                            .show());
+              }
+            })
+        .execute();
+  }
+
   private void attachTooltip(View anchor, String text) {
-    // TODO: Use string res value below supports it
     TooltipCompat.setTooltipText(anchor, text);
   }
 
@@ -373,13 +399,9 @@ public class CustomEditorTextActionWindow extends EditorTextActionWindow {
   }
 
   private void runPostDisplay() {
-    if (!isShowing()) {
-      return;
-    }
+    if (!isShowing()) return;
     dismiss();
-    if (!editor.getCursor().isSelected()) {
-      return;
-    }
+    if (!editor.getCursor().isSelected()) return;
     editor.postDelayedInLifecycle(
         new Runnable() {
           @Override
@@ -397,7 +419,7 @@ public class CustomEditorTextActionWindow extends EditorTextActionWindow {
         DELAY);
   }
 
-  void setColorFilterById(int id, ImageButton ic) {
-    ic.setColorFilter(id);
+  void setColorFilterById(int color, ImageButton btn) {
+    btn.setColorFilter(color);
   }
 }

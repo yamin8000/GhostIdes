@@ -100,6 +100,20 @@
              android:id="@+id/panel_btn_format"
              android:foreground="?attr/selectableItemBackgroundBorderless" />
 
+      
+        <ImageButton
+             android:layout_height="48dp"
+             android:layout_width="48dp"
+             android:visibility="gone"
+             android:contentDescription="@string/editor_translate"
+             android:scaleType="centerInside"
+             android:src="@drawable/ic_translate"
+             android:background="@android:color/transparent"
+             android:clickable="true"
+             android:focusable="true"
+             android:id="@+id/panel_btn_translate"
+             android:foreground="?attr/selectableItemBackgroundBorderless" />
+
     </LinearLayout>
 
 </HorizontalScrollView>
