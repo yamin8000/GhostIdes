@@ -4,46 +4,29 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
-import ir.hanzodev1375.ghostide.jgit.fragments.ChangedFilesFragment;
-import ir.hanzodev1375.ghostide.jgit.fragments.CommitHistoryFragment;
-import ir.hanzodev1375.ghostide.jgit.fragments.BranchesFragment;
-import ir.hanzodev1375.ghostide.jgit.fragments.DiffViewerFragment;
-import ir.hanzodev1375.ghostide.jgit.fragments.RemotesFragment;
+import ir.hanzodev1375.ghostide.jgit.model.GitTab;
 import java.util.List;
 
 public class ViewPagerAdapter extends FragmentStateAdapter {
-  private final List<String> titles;
+  private final List<GitTab> tabs;
 
-  public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity, List<String> titles) {
-    super(fragmentActivity);
-    this.titles = titles;
+  public ViewPagerAdapter(@NonNull FragmentActivity activity, List<GitTab> tabs) {
+    super(activity);
+    this.tabs = tabs;
   }
 
   @NonNull
   @Override
   public Fragment createFragment(int position) {
-    switch (position) {
-      case 0:
-        return new ChangedFilesFragment();
-      case 1:
-        return new CommitHistoryFragment();
-      case 2:
-        return new BranchesFragment();
-      case 3:
-        return new RemotesFragment();
-      case 4:
-        return new DiffViewerFragment(); 
-      default:
-        return new ChangedFilesFragment();
-    }
+    return tabs.get(position).getFragment();
   }
 
   @Override
   public int getItemCount() {
-    return 5;
+    return tabs.size();
   }
 
   public String getPageTitle(int position) {
-    return titles.get(position);
+    return tabs.get(position).getTitle();
   }
 }

@@ -14,7 +14,8 @@
          android:layout_width="250dp"
          android:scaleType="centerInside"
          android:src="@drawable/ic_lego_app"
-         android:layout_marginTop="5dp" />
+         android:layout_marginTop="5dp"
+         android:id="@+id/logo" />
 
     <TextView
          android:layout_height="wrap_content"

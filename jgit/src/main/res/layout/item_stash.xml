@@ -4,68 +4,51 @@
     android:layout_height="wrap_content"
     android:layout_width="match_parent"
     android:padding="12dp"
-    android:orientation="vertical"
-    >
+    android:orientation="vertical">
 
     <TextView
         android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:textSize="16sp"
-        android:id="@+id/tvRemoteName"
+        android:layout_width="match_parent"
         android:textStyle="bold"
-        />
+        android:id="@+id/tvStashMessage" />
 
     <TextView
         android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:textSize="14sp"
+        android:layout_width="match_parent"
         android:textColor="?android:attr/textColorSecondary"
-        android:layout_marginTop="4dp"
-        android:id="@+id/tvRemoteUrl"
-        />
+        android:textSize="12sp"
+        android:layout_marginTop="2dp"
+        android:id="@+id/tvStashHash" />
 
     <LinearLayout
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
         android:orientation="horizontal"
-        android:layout_marginTop="12dp"
-        >
+        android:layout_marginTop="8dp">
 
         <Button
             android:layout_height="wrap_content"
             android:layout_width="0dp"
-            android:layout_marginEnd="8dp"
             android:layout_weight="1"
-            android:id="@+id/btnPush"
-            android:text="Push"
-            />
+            android:layout_marginEnd="4dp"
+            android:id="@+id/btnStashPop"
+            android:text="Pop" />
 
         <Button
             android:layout_height="wrap_content"
             android:layout_width="0dp"
-            android:layout_marginEnd="8dp"
             android:layout_weight="1"
-            android:id="@+id/btnPull"
-            android:text="Pull"
-            />
+            android:layout_marginEnd="4dp"
+            android:id="@+id/btnStashApply"
+            android:text="Apply" />
 
         <Button
             android:layout_height="wrap_content"
             android:layout_width="0dp"
-            android:layout_marginEnd="8dp"
             android:layout_weight="1"
-            android:id="@+id/btnFetch"
-            android:text="Fetch"
-            />
-
-        <Button
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
             android:backgroundTint="?attr/colorError"
-            android:id="@+id/btnRemoveRemote"
-            android:text="Remove"
-            />
+            android:id="@+id/btnStashDrop"
+            android:text="Drop" />
 
     </LinearLayout>
-
 </LinearLayout>

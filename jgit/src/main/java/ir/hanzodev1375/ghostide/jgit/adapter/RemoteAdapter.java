@@ -22,6 +22,8 @@ public class RemoteAdapter extends RecyclerView.Adapter<RemoteAdapter.ViewHolder
     void onPush(RemoteInfo remote);
 
     void onPull(RemoteInfo remote);
+
+    void onFetch(RemoteInfo remote);
   }
 
   public void setOnRemoteActionListener(OnRemoteActionListener listener) {
@@ -59,6 +61,10 @@ public class RemoteAdapter extends RecyclerView.Adapter<RemoteAdapter.ViewHolder
         v -> {
           if (listener != null) listener.onPull(remote);
         });
+    holder.btnFetch.setOnClickListener(
+        v -> {
+          if (listener != null) listener.onFetch(remote);
+        });
   }
 
   @Override
@@ -68,7 +74,7 @@ public class RemoteAdapter extends RecyclerView.Adapter<RemoteAdapter.ViewHolder
 
   static class ViewHolder extends RecyclerView.ViewHolder {
     TextView tvName, tvUrl;
-    Button btnRemove, btnPush, btnPull;
+    Button btnRemove, btnPush, btnPull, btnFetch;
 
     ViewHolder(View itemView) {
       super(itemView);
@@ -77,6 +83,7 @@ public class RemoteAdapter extends RecyclerView.Adapter<RemoteAdapter.ViewHolder
       btnRemove = itemView.findViewById(R.id.btnRemoveRemote);
       btnPush = itemView.findViewById(R.id.btnPush);
       btnPull = itemView.findViewById(R.id.btnPull);
+      btnFetch = itemView.findViewById(R.id.btnFetch);
     }
   }
 }

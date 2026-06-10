@@ -2,11 +2,13 @@ package ir.hanzodev1375.ghostide.codeeditors;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import androidx.annotation.Nullable;
-import com.blankj.utilcode.util.ClipboardUtils;
 import com.eup.codeopsstudio.editor.langs.widget.component.CustomEditorTextActionWindow;
-import io.github.rosemoe.sora.event.SelectionChangeEvent;
+import io.github.rosemoe.sora.graphics.inlayHint.TextInlayHintRenderer;
+import io.github.rosemoe.sora.lang.styling.inlayHint.InlayHintsContainer;
+import io.github.rosemoe.sora.lang.styling.inlayHint.TextInlayHint;
 import io.github.rosemoe.sora.widget.component.EditorAutoCompletion;
 import io.github.rosemoe.sora.widget.component.EditorTextActionWindow;
 import io.github.rosemoe.sora.widget.component.Magnifier;
@@ -17,7 +19,7 @@ import ir.hanzodev1375.ghostide.codeeditors.setting.PreferencesUtils;
 import ir.hanzodev1375.ghostide.codeeditors.ui.CustomEditorAutoCompletion;
 import ir.hanzodev1375.ghostide.codeeditors.ui.CustomEditorCompletionAdapter;
 import java.util.Objects;
-//test
+
 public class IdeEditor extends CodeEditor
     implements SharedPreferences.OnSharedPreferenceChangeListener {
 
@@ -67,10 +69,42 @@ public class IdeEditor extends CodeEditor
   private void updateEditorPinLineNumber() {
     setPinLineNumber(setting.pinLineNumber());
   }
-  private void updateEditorMiniMap(){
+
+  private void updateEditorMiniMap() {
     var enabled = setting.enableMiniMap();
     getProps().showMinimap = enabled;
   }
+
+  public void setInlay(int line, int col, String text, boolean removed) {
+    var hint = new InlayHintsContainer();
+    if (removed) {
+      hint.add(new TextInlayHint(line, col, text));
+    } else hint.remove(new TextInlayHint(line, col, text));
+    setInlayHints(hint);
+    registerInlayHintRenderer(TextInlayHintRenderer.Companion.getDefaultInstance());
+  }
+
+  public void setInlayDrawable(int line, int col, Drawable text, boolean removed) {
+    var hint = new InlayHintsContainer();
+    if (removed) {
+      hint.add(new DrawableInlayHint(line, col, text));
+    } else hint.remove(new DrawableInlayHint(line, col, text));
+    setInlayHints(hint);
+    registerInlayHintRenderer(new DrawableInlayHintRenderer());
+  }
+
+  public void updateHintWelcom() {
+    var hint = new InlayHintsContainer();
+    String text = "Welcome to Ghost Ide write something....";
+    if (getText().isEmpty()) {
+      hint.add(new TextInlayHint(0, 0, text));
+    } else {
+      hint.remove(new TextInlayHint(0, 0, text));
+    }
+    setInlayHints(hint);
+    registerInlayHintRenderer(TextInlayHintRenderer.Companion.getDefaultInstance());
+  }
+
   public void setWebIdeColor(boolean mod) {
     if (mod) {
       webColorIde = new WebColorIde(this);

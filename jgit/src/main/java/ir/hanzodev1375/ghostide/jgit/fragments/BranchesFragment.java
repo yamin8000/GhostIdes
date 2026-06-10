@@ -49,7 +49,31 @@ public class BranchesFragment extends Fragment {
 
           @Override
           public void onDelete(String branchName) {
-            viewModel.deleteBranch(branchName);
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Delete Branch")
+                .setMessage("Delete branch '" + branchName + "'?")
+                .setPositiveButton("Delete", (d, w) -> viewModel.deleteBranch(branchName))
+                .setNegativeButton("Cancel", null).show();
+          }
+
+          @Override
+          public void onMerge(String branchName) {
+            String current = viewModel.currentBranch.getValue();
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Merge Branch")
+                .setMessage("Merge '" + branchName + "' into '" + current + "'?")
+                .setPositiveButton("Merge", (d, w) -> viewModel.mergeBranch(branchName))
+                .setNegativeButton("Cancel", null).show();
+          }
+
+          @Override
+          public void onRebase(String branchName) {
+            String current = viewModel.currentBranch.getValue();
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Rebase")
+                .setMessage("Rebase '" + current + "' onto '" + branchName + "'?\n\nThis rewrites commit history.")
+                .setPositiveButton("Rebase", (d, w) -> viewModel.rebaseBranch(branchName))
+                .setNegativeButton("Cancel", null).show();
           }
         });
 

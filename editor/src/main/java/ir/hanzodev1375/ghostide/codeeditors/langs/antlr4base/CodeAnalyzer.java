@@ -157,6 +157,8 @@ public abstract class CodeAnalyzer
     }
     stateObj.state = newState;
     stateObj.lexerMode = lexer._mode;
+    // new Api
+    stateObj.lineNumber = line;
     return new LineTokenizeResult<>(stateObj, tokens);
   }
 

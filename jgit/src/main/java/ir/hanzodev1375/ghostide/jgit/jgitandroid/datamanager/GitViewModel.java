@@ -12,6 +12,8 @@ import ir.hanzodev1375.ghostide.jgit.jgitandroid.model.RemoteOperationResult;
 import ir.hanzodev1375.ghostide.jgit.jgitandroid.model.PushResult;
 import ir.hanzodev1375.ghostide.jgit.jgitandroid.model.PullResult;
 import ir.hanzodev1375.ghostide.jgit.jgitandroid.model.FetchResult;
+import ir.hanzodev1375.ghostide.jgit.jgitandroid.model.StashInfo;
+import ir.hanzodev1375.ghostide.jgit.jgitandroid.model.ConflictFile;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -50,6 +52,12 @@ public class GitViewModel extends ViewModel {
 
   private final MutableLiveData<String> _progressMessage = new MutableLiveData<>();
   public final LiveData<String> progressMessage = _progressMessage;
+
+  private final MutableLiveData<List<StashInfo>> _stashList = new MutableLiveData<>();
+  public final LiveData<List<StashInfo>> stashList = _stashList;
+
+  private final MutableLiveData<List<ConflictFile>> _conflictFiles = new MutableLiveData<>();
+  public final LiveData<List<ConflictFile>> conflictFiles = _conflictFiles;
 
   private final ExecutorService executor = Executors.newFixedThreadPool(4);
   private final MutableLiveData<String> _selectedDiffFile = new MutableLiveData<>();
@@ -388,6 +396,183 @@ public class GitViewModel extends ViewModel {
           List<String> allBranches =
               gitManager != null ? gitManager.getAllBranches() : Collections.emptyList();
           _branches.postValue(allBranches);
+        });
+  }
+
+  // ─────────────────────────── STASH ───────────────────────────
+
+  public void stashSave(String message) {
+    _progressMessage.postValue("Saving stash...");
+    executor.execute(
+        () -> {
+          OperationResult result =
+              gitManager != null
+                  ? gitManager.stashSave(message)
+                  : new OperationResult(false, "Git manager not initialized");
+          _operationResult.postValue(result);
+          if (result.isSuccess()) {
+            refreshChangedFiles();
+            refreshStashList();
+          }
+          _progressMessage.postValue(null);
+        });
+  }
+
+  public void refreshStashList() {
+    executor.execute(
+        () -> {
+          List<StashInfo> list =
+              gitManager != null ? gitManager.getStashList() : Collections.emptyList();
+          _stashList.postValue(list);
+        });
+  }
+
+  public void stashApply(int index) {
+    _progressMessage.postValue("Applying stash...");
+    executor.execute(
+        () -> {
+          OperationResult result =
+              gitManager != null
+                  ? gitManager.stashApply(index)
+                  : new OperationResult(false, "Git manager not initialized");
+          _operationResult.postValue(result);
+          if (result.isSuccess()) refreshChangedFiles();
+          _progressMessage.postValue(null);
+        });
+  }
+
+  public void stashPop(int index) {
+    _progressMessage.postValue("Popping stash...");
+    executor.execute(
+        () -> {
+          OperationResult result =
+              gitManager != null
+                  ? gitManager.stashPop(index)
+                  : new OperationResult(false, "Git manager not initialized");
+          _operationResult.postValue(result);
+          if (result.isSuccess()) {
+            refreshChangedFiles();
+            refreshStashList();
+          }
+          _progressMessage.postValue(null);
+        });
+  }
+
+  public void stashDrop(int index) {
+    _progressMessage.postValue("Dropping stash...");
+    executor.execute(
+        () -> {
+          OperationResult result =
+              gitManager != null
+                  ? gitManager.stashDrop(index)
+                  : new OperationResult(false, "Git manager not initialized");
+          _operationResult.postValue(result);
+          if (result.isSuccess()) refreshStashList();
+          _progressMessage.postValue(null);
+        });
+  }
+
+  // ─────────────────────────── MERGE ───────────────────────────
+
+  public void mergeBranch(String branchName) {
+    _progressMessage.postValue("Merging " + branchName + "...");
+    executor.execute(
+        () -> {
+          OperationResult result =
+              gitManager != null
+                  ? gitManager.mergeBranch(branchName)
+                  : new OperationResult(false, "Git manager not initialized");
+          _operationResult.postValue(result);
+          if (result.isSuccess()) refreshAll();
+          else if (result.getMessage().contains("conflict")) refreshConflictFiles();
+          _progressMessage.postValue(null);
+        });
+  }
+
+  // ─────────────────────────── REBASE ───────────────────────────
+
+  public void rebaseBranch(String branchName) {
+    _progressMessage.postValue("Rebasing onto " + branchName + "...");
+    executor.execute(
+        () -> {
+          OperationResult result =
+              gitManager != null
+                  ? gitManager.rebaseBranch(branchName)
+                  : new OperationResult(false, "Git manager not initialized");
+          _operationResult.postValue(result);
+          if (result.isSuccess()) refreshAll();
+          else refreshChangedFiles();
+          _progressMessage.postValue(null);
+        });
+  }
+
+  public void abortRebase() {
+    _progressMessage.postValue("Aborting rebase...");
+    executor.execute(
+        () -> {
+          OperationResult result =
+              gitManager != null
+                  ? gitManager.abortRebase()
+                  : new OperationResult(false, "Git manager not initialized");
+          _operationResult.postValue(result);
+          if (result.isSuccess()) refreshAll();
+          _progressMessage.postValue(null);
+        });
+  }
+
+  // ─────────────────────────── CONFLICT RESOLVER ───────────────────────────
+
+  public void refreshConflictFiles() {
+    executor.execute(
+        () -> {
+          List<ConflictFile> list =
+              gitManager != null ? gitManager.getConflictFiles() : Collections.emptyList();
+          _conflictFiles.postValue(list);
+        });
+  }
+
+  public void resolveConflictWithOurs(String path) {
+    executor.execute(
+        () -> {
+          OperationResult result =
+              gitManager != null
+                  ? gitManager.resolveConflictWithOurs(path)
+                  : new OperationResult(false, "Git manager not initialized");
+          _operationResult.postValue(result);
+          if (result.isSuccess()) {
+            refreshChangedFiles();
+            refreshConflictFiles();
+          }
+        });
+  }
+
+  public void resolveConflictWithTheirs(String path) {
+    executor.execute(
+        () -> {
+          OperationResult result =
+              gitManager != null
+                  ? gitManager.resolveConflictWithTheirs(path)
+                  : new OperationResult(false, "Git manager not initialized");
+          _operationResult.postValue(result);
+          if (result.isSuccess()) {
+            refreshChangedFiles();
+            refreshConflictFiles();
+          }
+        });
+  }
+
+  public void resolveConflictWithCustom(String path, String content) {
+    executor.execute(
+        () -> {
+          OperationResult result =
+              gitManager != null
+                  ? gitManager.resolveConflictWithCustom(path, content)
+                  : new OperationResult(false, "Git manager not initialized");
+          _operationResult.postValue(result);
+          if (result.isSuccess()) {
+            refreshChangedFiles();
+            refreshConflictFiles();
+          }
         });
   }
 

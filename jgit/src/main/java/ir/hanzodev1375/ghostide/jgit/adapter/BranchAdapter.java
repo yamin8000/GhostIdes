@@ -18,8 +18,9 @@ public class BranchAdapter extends RecyclerView.Adapter<BranchAdapter.ViewHolder
 
   public interface OnBranchActionListener {
     void onCheckout(String branchName);
-
     void onDelete(String branchName);
+    void onMerge(String branchName);
+    void onRebase(String branchName);
   }
 
   public void setOnBranchActionListener(OnBranchActionListener listener) {
@@ -59,6 +60,18 @@ public class BranchAdapter extends RecyclerView.Adapter<BranchAdapter.ViewHolder
         v -> {
           if (listener != null && !branch.equals(currentBranch)) listener.onDelete(branch);
         });
+    if (holder.btnMerge != null) {
+      holder.btnMerge.setOnClickListener(v -> {
+        if (listener != null && !branch.equals(currentBranch)) listener.onMerge(branch);
+      });
+      holder.btnMerge.setEnabled(!branch.equals(currentBranch));
+    }
+    if (holder.btnRebase != null) {
+      holder.btnRebase.setOnClickListener(v -> {
+        if (listener != null && !branch.equals(currentBranch)) listener.onRebase(branch);
+      });
+      holder.btnRebase.setEnabled(!branch.equals(currentBranch));
+    }
   }
 
   @Override
@@ -68,13 +81,15 @@ public class BranchAdapter extends RecyclerView.Adapter<BranchAdapter.ViewHolder
 
   static class ViewHolder extends RecyclerView.ViewHolder {
     TextView tvBranchName;
-    Button btnCheckout, btnDelete;
+    Button btnCheckout, btnDelete, btnMerge, btnRebase;
 
     ViewHolder(View itemView) {
       super(itemView);
       tvBranchName = itemView.findViewById(R.id.tvBranchName);
       btnCheckout = itemView.findViewById(R.id.btnCheckout);
       btnDelete = itemView.findViewById(R.id.btnDelete);
+      btnMerge = itemView.findViewById(R.id.btnMerge);
+      btnRebase = itemView.findViewById(R.id.btnRebase);
     }
   }
 }

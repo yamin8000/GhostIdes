@@ -16,7 +16,7 @@ import ir.hanzodev1375.ghostide.jgit.adapter.RemoteAdapter;
 import ir.hanzodev1375.ghostide.jgit.dialogs.AddRemoteDialog;
 import ir.hanzodev1375.ghostide.jgit.jgitandroid.datamanager.GitViewModel;
 import ir.hanzodev1375.ghostide.jgit.jgitandroid.model.RemoteInfo;
-import ir.hanzodev1375.ghostide.jgit.GitHubClient; // اضافه کنید
+import ir.hanzodev1375.ghostide.jgit.GitHubClient;
 
 public class RemotesFragment extends Fragment {
   private GitViewModel viewModel;
@@ -62,6 +62,11 @@ public class RemotesFragment extends Fragment {
           public void onPull(RemoteInfo remote) {
             performPull(remote);
           }
+
+          @Override
+          public void onFetch(RemoteInfo remote) {
+            performFetch(remote);
+          }
         });
 
     view.findViewById(R.id.btnAddRemote).setOnClickListener(v -> showAddRemoteDialog());
@@ -77,12 +82,63 @@ public class RemotesFragment extends Fragment {
         getViewLifecycleOwner(),
         result -> {
           if (result != null) {
-            Toast.makeText(getContext(), result.getMessage(), Toast.LENGTH_LONG).show();
-            if (result.isSuccess() && "pull".equals(result.getOperation())) {
+            if (!result.isSuccess() && isConflictError(result.getMessage())) {
+              showConflictDialog(result.getMessage());
+            } else {
+              Toast.makeText(getContext(), result.getMessage(), Toast.LENGTH_LONG).show();
+            }
+            if (result.isSuccess()
+                && ("pull".equals(result.getOperation())
+                    || "fetch".equals(result.getOperation()))) {
               viewModel.refreshAll();
             }
           }
         });
+  }
+
+  private boolean isConflictError(String message) {
+    if (message == null) return false;
+    String lower = message.toLowerCase();
+    return lower.contains("conflict")
+        || lower.contains("merge conflict")
+        || lower.contains("cannot merge")
+        || lower.contains("merging is not possible");
+  }
+
+  private void showConflictDialog(String errorMessage) {
+    new MaterialAlertDialogBuilder(requireContext())
+        .setTitle("⚠️ Merge Conflict")
+        .setMessage(
+            "Conflicts were detected while pulling.\n\n"
+                + "Conflicting files are marked in the Changes tab.\n"
+                + "Please resolve each conflict manually, then stage and commit the files.\n\n"
+                + "Details: "
+                + errorMessage)
+        .setPositiveButton(
+            "Go to Changes",
+            (d, w) -> {
+              if (getActivity() != null) {
+                androidx.viewpager2.widget.ViewPager2 viewPager =
+                    getActivity().findViewById(ir.hanzodev1375.ghostide.jgit.R.id.viewPager);
+                if (viewPager != null) viewPager.setCurrentItem(0, true);
+              }
+              viewModel.refreshChangedFiles();
+            })
+        .setNegativeButton("Dismiss", null)
+        .show();
+  }
+
+  private void performFetch(RemoteInfo remote) {
+    String token = gitHubClient.getToken();
+    if (token == null || token.isEmpty()) {
+      Toast.makeText(
+              getContext(), "GitHub token not found. Please login first.", Toast.LENGTH_SHORT)
+          .show();
+      return;
+    }
+    Toast.makeText(getContext(), "Fetching from " + remote.getName() + "...", Toast.LENGTH_SHORT)
+        .show();
+    viewModel.fetch(remote.getName(), "oauth2", token);
   }
 
   private void performPush(RemoteInfo remote) {

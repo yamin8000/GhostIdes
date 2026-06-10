@@ -6,8 +6,13 @@ import ir.hanzodev1375.ghostide.jgit.jgitandroid.model.RemoteInfo;
 import ir.hanzodev1375.ghostide.jgit.jgitandroid.model.PushResult;
 import ir.hanzodev1375.ghostide.jgit.jgitandroid.model.PullResult;
 import ir.hanzodev1375.ghostide.jgit.jgitandroid.model.FetchResult;
+import ir.hanzodev1375.ghostide.jgit.jgitandroid.model.StashInfo;
+import ir.hanzodev1375.ghostide.jgit.jgitandroid.model.ConflictFile;
+import ir.hanzodev1375.ghostide.jgit.jgitandroid.model.OperationResult;
 import ir.hanzodev1375.ghostide.jgit.jgitandroid.ChangeType;
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.lib.Constants;
@@ -27,6 +32,7 @@ import org.eclipse.jgit.attributes.AttributesNode;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class GitManager {
@@ -412,6 +418,258 @@ public class GitManager {
     loadGitAttributes();
   }
 
+  // ─────────────────────────── STASH ───────────────────────────
+
+  public OperationResult stashSave(String message) {
+    try {
+      if (git == null) return new OperationResult(false, "Repository not open");
+      org.eclipse.jgit.revwalk.RevCommit stashCommit =
+          git.stashCreate()
+              .setIncludeUntracked(true)
+              .setWorkingDirectoryMessage(message != null && !message.isEmpty() ? message : null)
+              .call();
+      if (stashCommit == null) return new OperationResult(false, "Nothing to stash");
+      return new OperationResult(true, "Stash saved: " + stashCommit.getName().substring(0, 7));
+    } catch (Exception e) {
+      e.printStackTrace();
+      return new OperationResult(false, e.getMessage() != null ? e.getMessage() : "Stash failed");
+    }
+  }
+
+  public List<StashInfo> getStashList() {
+    List<StashInfo> list = new ArrayList<>();
+    try {
+      if (git == null) return list;
+      Collection<org.eclipse.jgit.revwalk.RevCommit> stashes = git.stashList().call();
+      int index = 0;
+      for (org.eclipse.jgit.revwalk.RevCommit stash : stashes) {
+        list.add(
+            new StashInfo(
+                index++,
+                stash.getShortMessage(),
+                stash.getName().substring(0, 7),
+                (long) stash.getCommitTime() * 1000));
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return list;
+  }
+
+  public OperationResult stashApply(int index) {
+    try {
+      if (git == null) return new OperationResult(false, "Repository not open");
+      git.stashApply().setStashRef("stash@{" + index + "}").call();
+      return new OperationResult(true, "Stash applied");
+    } catch (org.eclipse.jgit.api.errors.StashApplyFailureException e) {
+      return new OperationResult(false, "Stash apply conflict — resolve manually");
+    } catch (Exception e) {
+      e.printStackTrace();
+      return new OperationResult(false, e.getMessage() != null ? e.getMessage() : "Apply failed");
+    }
+  }
+
+  public OperationResult stashDrop(int index) {
+    try {
+      if (git == null) return new OperationResult(false, "Repository not open");
+      git.stashDrop().setStashRef(index).call();
+      return new OperationResult(true, "Stash dropped");
+    } catch (Exception e) {
+      e.printStackTrace();
+      return new OperationResult(false, e.getMessage() != null ? e.getMessage() : "Drop failed");
+    }
+  }
+
+  public OperationResult stashPop(int index) {
+    OperationResult apply = stashApply(index);
+    if (apply.isSuccess()) {
+      return stashDrop(index);
+    }
+    return apply;
+  }
+
+  // ─────────────────────────── MERGE ───────────────────────────
+
+  public OperationResult mergeBranch(String branchName) {
+    try {
+      if (git == null) return new OperationResult(false, "Repository not open");
+      org.eclipse.jgit.lib.ObjectId branchId = repository.resolve("refs/heads/" + branchName);
+      if (branchId == null) return new OperationResult(false, "Branch not found: " + branchName);
+
+      org.eclipse.jgit.api.MergeResult result =
+          git.merge()
+              .include(branchId)
+              .setCommit(true)
+              .setFastForward(org.eclipse.jgit.api.MergeCommand.FastForwardMode.FF)
+              .setMessage("Merge branch '" + branchName + "'")
+              .call();
+
+      org.eclipse.jgit.api.MergeResult.MergeStatus status = result.getMergeStatus();
+
+      if (status == org.eclipse.jgit.api.MergeResult.MergeStatus.MERGED
+          || status == org.eclipse.jgit.api.MergeResult.MergeStatus.FAST_FORWARD
+          || status == org.eclipse.jgit.api.MergeResult.MergeStatus.ALREADY_UP_TO_DATE) {
+        return new OperationResult(true, "Merge successful: " + status.toString());
+      } else if (status == org.eclipse.jgit.api.MergeResult.MergeStatus.CONFLICTING) {
+        String files = String.join(", ", result.getConflicts().keySet());
+        return new OperationResult(false, "Merge conflict in: " + files);
+      } else {
+        return new OperationResult(false, "Merge failed: " + status.toString());
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      return new OperationResult(false, e.getMessage() != null ? e.getMessage() : "Merge failed");
+    }
+  }
+
+  // ─────────────────────────── REBASE ───────────────────────────
+
+  public OperationResult rebaseBranch(String branchName) {
+    try {
+      if (git == null) return new OperationResult(false, "Repository not open");
+      org.eclipse.jgit.lib.ObjectId branchId = repository.resolve("refs/heads/" + branchName);
+      if (branchId == null) return new OperationResult(false, "Branch not found: " + branchName);
+
+      org.eclipse.jgit.api.RebaseResult result = git.rebase().setUpstream(branchId).call();
+
+      org.eclipse.jgit.api.RebaseResult.Status status = result.getStatus();
+
+      if (status == org.eclipse.jgit.api.RebaseResult.Status.OK
+          || status == org.eclipse.jgit.api.RebaseResult.Status.UP_TO_DATE
+          || status == org.eclipse.jgit.api.RebaseResult.Status.FAST_FORWARD) {
+        return new OperationResult(true, "Rebase successful");
+      } else if (status == org.eclipse.jgit.api.RebaseResult.Status.STOPPED) {
+        return new OperationResult(
+            false,
+            "Rebase stopped due to conflict. Resolve conflicts, then 'git rebase --continue'");
+      } else {
+        return new OperationResult(false, "Rebase failed: " + status.toString());
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      return new OperationResult(false, e.getMessage() != null ? e.getMessage() : "Rebase failed");
+    }
+  }
+
+  public OperationResult abortRebase() {
+    try {
+      if (git == null) return new OperationResult(false, "Repository not open");
+      git.rebase().setOperation(org.eclipse.jgit.api.RebaseCommand.Operation.ABORT).call();
+      return new OperationResult(true, "Rebase aborted");
+    } catch (Exception e) {
+      e.printStackTrace();
+      return new OperationResult(false, "Abort failed: " + e.getMessage());
+    }
+  }
+
+  // ─────────────────────────── CONFLICT RESOLVER ───────────────────────────
+
+  public List<ConflictFile> getConflictFiles() {
+    List<ConflictFile> conflicts = new ArrayList<>();
+    try {
+      if (repository == null) return conflicts;
+      org.eclipse.jgit.api.Status status = git.status().call();
+      for (String path : status.getConflicting()) {
+        ConflictFile cf = readConflictFile(path);
+        if (cf != null) conflicts.add(cf);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return conflicts;
+  }
+
+  private ConflictFile readConflictFile(String relativePath) {
+    try {
+      File file = new File(repository.getWorkTree(), relativePath);
+      String content = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+
+      StringBuilder ours = new StringBuilder();
+      StringBuilder theirs = new StringBuilder();
+      StringBuilder base = new StringBuilder();
+      StringBuilder current = new StringBuilder();
+
+      // Parse conflict markers: <<<<<<< / ======= / >>>>>>>
+      int state = 0; // 0=normal, 1=ours, 2=base/theirs
+      for (String line : content.split("\n")) {
+        if (line.startsWith("<<<<<<<")) {
+          state = 1;
+        } else if (line.startsWith("=======") && state == 1) {
+          state = 2;
+        } else if (line.startsWith(">>>>>>>") && state == 2) {
+          state = 0;
+        } else if (state == 0) {
+          current.append(line).append("\n");
+          ours.append(line).append("\n");
+          theirs.append(line).append("\n");
+        } else if (state == 1) {
+          ours.append(line).append("\n");
+        } else {
+          theirs.append(line).append("\n");
+        }
+      }
+
+      return new ConflictFile(relativePath, ours.toString(), theirs.toString(), current.toString());
+    } catch (Exception e) {
+      e.printStackTrace();
+      return null;
+    }
+  }
+
+  public OperationResult resolveConflictWithOurs(String relativePath) {
+    return resolveConflict(relativePath, true);
+  }
+
+  public OperationResult resolveConflictWithTheirs(String relativePath) {
+    return resolveConflict(relativePath, false);
+  }
+
+  private OperationResult resolveConflict(String relativePath, boolean useOurs) {
+    try {
+      if (repository == null) return new OperationResult(false, "Repository not open");
+      File file = new File(repository.getWorkTree(), relativePath);
+      String content = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+
+      StringBuilder resolved = new StringBuilder();
+      int state = 0;
+      for (String line : content.split("\n")) {
+        if (line.startsWith("<<<<<<<")) {
+          state = 1;
+        } else if (line.startsWith("=======") && state == 1) {
+          state = 2;
+        } else if (line.startsWith(">>>>>>>") && state == 2) {
+          state = 0;
+        } else if (state == 0) {
+          resolved.append(line).append("\n");
+        } else if (state == 1 && useOurs) {
+          resolved.append(line).append("\n");
+        } else if (state == 2 && !useOurs) {
+          resolved.append(line).append("\n");
+        }
+      }
+
+      Files.write(file.toPath(), resolved.toString().getBytes(StandardCharsets.UTF_8));
+      stageFile(relativePath);
+      return new OperationResult(true, "Conflict resolved in: " + relativePath);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return new OperationResult(false, "Resolve failed: " + e.getMessage());
+    }
+  }
+
+  public OperationResult resolveConflictWithCustom(String relativePath, String resolvedContent) {
+    try {
+      if (repository == null) return new OperationResult(false, "Repository not open");
+      File file = new File(repository.getWorkTree(), relativePath);
+      Files.write(file.toPath(), resolvedContent.getBytes(StandardCharsets.UTF_8));
+      stageFile(relativePath);
+      return new OperationResult(true, "Conflict resolved with custom content");
+    } catch (Exception e) {
+      e.printStackTrace();
+      return new OperationResult(false, "Resolve failed: " + e.getMessage());
+    }
+  }
+
   public void close() {
     if (git != null) git.close();
     if (repository != null) repository.close();
@@ -506,10 +764,31 @@ public class GitManager {
       org.eclipse.jgit.api.PullResult result = pullCommand.call();
       boolean success = result.isSuccessful();
 
-      return new PullResult(success, success ? "Pull successful" : "Pull failed");
+      // Check for merge conflicts explicitly
+      if (!success) {
+        org.eclipse.jgit.api.MergeResult mergeResult = result.getMergeResult();
+        if (mergeResult != null
+            && mergeResult.getMergeStatus()
+                == org.eclipse.jgit.api.MergeResult.MergeStatus.CONFLICTING) {
+          java.util.Set<String> conflictingFiles = mergeResult.getConflicts().keySet();
+          String fileList = String.join(", ", conflictingFiles);
+          return new PullResult(
+              false, "Merge conflict in: " + fileList + ". Resolve conflicts and commit.");
+        }
+        return new PullResult(false, "Pull failed");
+      }
+
+      return new PullResult(true, "Pull successful");
+    } catch (org.eclipse.jgit.api.errors.CheckoutConflictException e) {
+      return new PullResult(
+          false,
+          "Cannot merge: local changes conflict with remote. "
+              + "Commit or stash your changes first. Conflicting files: "
+              + String.join(", ", e.getConflictingPaths()));
     } catch (Exception e) {
       e.printStackTrace();
-      return new PullResult(false, e.getMessage() != null ? e.getMessage() : "Pull failed");
+      String msg = e.getMessage() != null ? e.getMessage() : "Pull failed";
+      return new PullResult(false, msg);
     }
   }
 
@@ -527,8 +806,13 @@ public class GitManager {
             new UsernamePasswordCredentialsProvider(username, password));
       }
 
-      fetchCommand.call();
-      return new FetchResult(true, "Fetch successful");
+      org.eclipse.jgit.transport.FetchResult result = fetchCommand.call();
+      int updatedCount = result.getTrackingRefUpdates().size();
+      String msg =
+          updatedCount > 0
+              ? "Fetch successful: " + updatedCount + " ref(s) updated from " + remoteName
+              : "Already up to date with " + remoteName;
+      return new FetchResult(true, msg);
     } catch (Exception e) {
       e.printStackTrace();
       return new FetchResult(false, e.getMessage() != null ? e.getMessage() : "Fetch failed");

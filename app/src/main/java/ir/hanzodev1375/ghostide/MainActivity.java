@@ -2,37 +2,41 @@ package ir.hanzodev1375.ghostide;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Toast;
-
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AppCompatActivity;
-
+import android.widget.ImageView;
+import ir.hanzodev1375.ghostide.activity.BaseCompat;
 import ir.hanzodev1375.ghostide.activity.FileManagerActivity;
 import ir.hanzodev1375.ghostide.utils.PermissionUtils;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseCompat {
 
   private ActivityResultLauncher<Intent> manageStorageLauncher;
+  private boolean started = false;
 
   @Override
-  public void onCreate(Bundle arg0) {
-    super.onCreate(arg0);
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
     manageStorageLauncher =
         registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-              if (PermissionUtils.hasManageStoragePermission(this)) {
-                startFileManager();
-              } else {
+              if (PermissionUtils.hasManageStoragePermission(this)) startFileManager();
+              else {
                 Toast.makeText(this, "برای مدیریت فایل به مجوز نیاز است", Toast.LENGTH_LONG).show();
                 finish();
               }
             });
-
-    checkPermissionsAndStart();
+    ImageView logo = findViewById(R.id.logo);
+    logo.setAlpha(0f);
+    logo.animate()
+        .alpha(1f)
+        .setDuration(800)
+        .withEndAction(() -> logo.postDelayed(this::checkPermissionsAndStart, 1200))
+        .start();
   }
 
   private void checkPermissionsAndStart() {
@@ -45,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
   }
 
   private void startFileManager() {
+    if (started) return;
+    started = true;
     startActivity(new Intent(this, FileManagerActivity.class));
     finish();
   }
@@ -52,8 +58,8 @@ public class MainActivity extends AppCompatActivity {
   @Override
   protected void onResume() {
     super.onResume();
-    if (PermissionUtils.hasPermissions(this) && PermissionUtils.hasManageStoragePermission(this)) {
-      startFileManager();
-    }
+    if (!started
+        && PermissionUtils.hasPermissions(this)
+        && PermissionUtils.hasManageStoragePermission(this)) startFileManager();
   }
 }

@@ -1,5 +1,6 @@
 package ir.hanzodev1375.ghostide.codeeditors.langs.json;
 
+import android.content.Context;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -7,16 +8,12 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonElement;
-import io.github.rosemoe.sora.lang.EmptyLanguage;
 import io.github.rosemoe.sora.lang.Language;
 import io.github.rosemoe.sora.lang.QuickQuoteHandler;
 import io.github.rosemoe.sora.lang.analysis.AnalyzeManager;
 import io.github.rosemoe.sora.lang.completion.CompletionHelper;
 import io.github.rosemoe.sora.lang.completion.CompletionPublisher;
 import io.github.rosemoe.sora.lang.completion.IdentifierAutoComplete;
-import io.github.rosemoe.sora.lang.completion.snippet.CodeSnippet;
-import io.github.rosemoe.sora.lang.completion.snippet.parser.CodeSnippetParser;
-import io.github.rosemoe.sora.lang.completion.SnippetDescription;
 import io.github.rosemoe.sora.lang.format.AsyncFormatter;
 import io.github.rosemoe.sora.lang.format.Formatter;
 import io.github.rosemoe.sora.lang.smartEnter.NewlineHandler;
@@ -29,18 +26,8 @@ import io.github.rosemoe.sora.text.TextRange;
 import io.github.rosemoe.sora.text.TextUtils;
 import io.github.rosemoe.sora.widget.SymbolPairMatch;
 import ir.hanzodev1375.ghostide.codeeditors.langs.antlr4base.CharParser;
-import ir.hanzodev1375.ghostide.codeeditors.langs.antlr4base.SnippetCompletionItem;
-import ir.hanzodev1375.ghostide.codeeditors.langs.html.CssHelper;
-import ir.hanzodev1375.ghostide.codeeditors.langs.html.CssCompletionItem;
-import ir.hanzodev1375.ghostide.codeeditors.langs.html.HTMLAnalyzer;
-import ir.hanzodev1375.ghostide.codeeditors.langs.html.HTMLLexer;
-import ir.hanzodev1375.ghostide.codeeditors.langs.html.HtmlHelper;
-import ir.hanzodev1375.ghostide.codeeditors.lspcustomhot.Css3Server;
-import ir.hanzodev1375.ghostide.codeeditors.lspcustomhot.PathCompleter;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.List;
-import ir.hanzodev1375.ghostide.codeeditors.lspcustomhot.CustomCompletionItem;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.Token;
 import io.github.rosemoe.sora.lang.smartEnter.NewlineHandleResult;
@@ -50,11 +37,17 @@ public class JsonLanguage implements Language {
 
   private final JsonAnalyzer analyzer;
   private final IdentifierAutoComplete autoComplete;
-
-  public JsonLanguage() {
+  private String path;
+  private Context ctx;
+  
+  
+  public JsonLanguage(Context ctx, String path) {
+    this.path = path;
+    this.ctx = ctx;
     String[] htmlKeywords = {"true", "false", "null"};
     autoComplete = new IdentifierAutoComplete(htmlKeywords);
     analyzer = new JsonAnalyzer();
+    analyzer.init(ctx, path);
   }
 
   private final Formatter formatter =
@@ -64,7 +57,7 @@ public class JsonLanguage implements Language {
         public TextRange formatAsync(@NonNull Content text, @NonNull TextRange cursorRange) {
           String formatted;
           try {
-            
+
             formatted = formatJson(text.toString());
           } catch (Exception e) {
             formatted = text.toString();
@@ -120,10 +113,6 @@ public class JsonLanguage implements Language {
       @NonNull Bundle es) {
     String prefix = CompletionHelper.computePrefix(content, position, CharParser::parserJava);
     autoComplete.requireAutoComplete(content, position, prefix, publisher, null);
-    for (CssCompletionItem item : CssHelper.getPropertyItemsByPrefix(prefix)) {
-      publisher.addItem(item);
-    }
-    return;
   }
 
   @Override
@@ -208,11 +197,8 @@ public class JsonLanguage implements Language {
       int line = position.line;
 
       String before = text.getLine(line).subSequence(0, position.column).toString();
-
       int indent = TextUtils.countLeadingSpaceCount(before, tabSize);
-
       String indentStr = TextUtils.createIndent(indent + tabSize, tabSize, false);
-
       return new NewlineHandleResult(new StringBuilder("\n").append(indentStr), 0);
     }
   }
@@ -224,7 +210,6 @@ public class JsonLanguage implements Language {
         @NonNull Content text, @NonNull CharPosition position, @Nullable Styles style) {
 
       int line = position.line;
-
       if (line < 0 || line >= text.getLineCount()) {
         return false;
       }

@@ -21,6 +21,7 @@ import ir.hanzodev1375.ghostide.jgit.R;
 import ir.hanzodev1375.ghostide.jgit.jgitandroid.datamanager.GitViewModel;
 import ir.hanzodev1375.ghostide.jgit.jgitandroid.RepositoryStatus;
 import ir.hanzodev1375.ghostide.jgit.adapter.ViewPagerAdapter;
+import ir.hanzodev1375.ghostide.jgit.model.GitTab;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -111,19 +112,22 @@ public class GitBottomSheetFragment extends BottomSheetDialogFragment {
   }
 
   private void setupViewPager(View root) {
-    List<String> tabTitles = new ArrayList<>();
-    tabTitles.add("Changes");
-    tabTitles.add("History");
-    tabTitles.add("Branches");
-    tabTitles.add("Remotes");
-    tabTitles.add("Diff");
+    List<GitTab> tabs = new ArrayList<>();
+    tabs.add(new GitTab("Changes", new ChangedFilesFragment()));
+    tabs.add(new GitTab("History", new CommitHistoryFragment()));
+    tabs.add(new GitTab("Branches", new BranchesFragment()));
+    tabs.add(new GitTab("Remotes", new RemotesFragment()));
+    tabs.add(new GitTab("Stash", new StashFragment()));
+    tabs.add(new GitTab("Conflicts", new ConflictResolverFragment()));
+    tabs.add(new GitTab("Diff", new DiffViewerFragment()));
+
     ViewPager2 viewPager = root.findViewById(R.id.viewPager);
-    ViewPagerAdapter adapter = new ViewPagerAdapter(requireActivity(), tabTitles);
+    ViewPagerAdapter adapter = new ViewPagerAdapter(requireActivity(), tabs);
     viewPager.setAdapter(adapter);
 
     TabLayout tabLayout = root.findViewById(R.id.tabLayout);
     new TabLayoutMediator(
-            tabLayout, viewPager, (tab, position) -> tab.setText(tabTitles.get(position)))
+            tabLayout, viewPager, (tab, position) -> tab.setText(tabs.get(position).getTitle()))
         .attach();
   }
 
