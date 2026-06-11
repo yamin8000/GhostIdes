@@ -12,22 +12,32 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import android.os.Environment;
 import ir.hanzodev1375.ghostide.enums.FileState;
 import ir.hanzodev1375.ghostide.models.FileManagerModel;
 
 public class FileViewModel extends AndroidViewModel {
 
+  private static final int BUFFER_SIZE = 256 * 1024;
+
   private MutableLiveData<List<FileManagerModel>> filesLiveData = new MutableLiveData<>();
   private MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
   private MutableLiveData<String> currentPath = new MutableLiveData<>();
   private MutableLiveData<CopyProgress> copyProgress = new MutableLiveData<>();
+  private MutableLiveData<DeleteProgress> deleteProgress = new MutableLiveData<>();
   private PathManager pathManager;
   private FileState fileState = FileState.NONE;
+
+  private final ExecutorService ioExecutor =
+      Executors.newFixedThreadPool(Math.min(4, Runtime.getRuntime().availableProcessors()));
 
   public static class CopyProgress {
     public final String fileName;
@@ -59,17 +69,35 @@ public class FileViewModel extends AndroidViewModel {
     }
   }
 
+  private static class DirStats {
+    long totalBytes = 0;
+    int totalFiles = 0;
+  }
+
+  public static class DeleteProgress {
+    public final String fileName;
+    public final int deleted;
+    public final int total;
+    public final boolean isRunning;
+
+    public DeleteProgress(String fileName, int deleted, int total, boolean isRunning) {
+      this.fileName = fileName;
+      this.deleted = deleted;
+      this.total = total;
+      this.isRunning = isRunning;
+    }
+  }
+
   public FileViewModel(Application app) {
     super(app);
     pathManager = new PathManager(app.getApplicationContext());
     String initialPath;
     if (pathManager.isSaveEnabled()) {
       String savedPath = pathManager.getLastPath();
-      if (FileUtil.isExists(savedPath)) {
-        initialPath = savedPath;
-      } else {
-        initialPath = Environment.getExternalStorageDirectory().getAbsolutePath();
-      }
+      initialPath =
+          FileUtil.isExists(savedPath)
+              ? savedPath
+              : Environment.getExternalStorageDirectory().getAbsolutePath();
     } else {
       initialPath = Environment.getExternalStorageDirectory().getAbsolutePath();
     }
@@ -91,6 +119,10 @@ public class FileViewModel extends AndroidViewModel {
 
   public LiveData<CopyProgress> getCopyProgress() {
     return copyProgress;
+  }
+
+  public LiveData<DeleteProgress> getDeleteProgress() {
+    return deleteProgress;
   }
 
   public void savePath(boolean save) {
@@ -115,37 +147,34 @@ public class FileViewModel extends AndroidViewModel {
 
   public void loadFiles(String dirPath) {
     isLoading.postValue(true);
-    new Thread(
-            () -> {
-              List<FileManagerModel> list = new ArrayList<>();
-              File dir = new File(dirPath);
-              File[] files = dir.listFiles();
-              if (files != null) {
-                Arrays.sort(
-                    files,
-                    Comparator.comparing(File::isDirectory)
-                        .reversed()
-                        .thenComparing(File::getName, String.CASE_INSENSITIVE_ORDER));
-                for (File file : files) {
-                  String name = file.getName();
-                  if (!name.startsWith(".")) {
-                    FileManagerModel model =
-                        new FileManagerModel(
-                            file.getAbsolutePath(), name, fileState, file.lastModified());
-                    list.add(model);
-                  }
-                }
+    ioExecutor.execute(
+        () -> {
+          List<FileManagerModel> list = new ArrayList<>();
+          File dir = new File(dirPath);
+          File[] files = dir.listFiles();
+          if (files != null) {
+            Arrays.sort(
+                files,
+                Comparator.comparing(File::isDirectory)
+                    .reversed()
+                    .thenComparing(File::getName, String.CASE_INSENSITIVE_ORDER));
+            for (File file : files) {
+              String name = file.getName();
+              if (!name.startsWith(".")) {
+                list.add(
+                    new FileManagerModel(
+                        file.getAbsolutePath(), name, fileState, file.lastModified()));
               }
-              filesLiveData.postValue(list);
-              isLoading.postValue(false);
-            })
-        .start();
+            }
+          }
+          filesLiveData.postValue(list);
+          isLoading.postValue(false);
+        });
   }
 
   public void renameFile(FileManagerModel model, String newName) {
     File oldFile = new File(model.getPath());
-    String newPath = oldFile.getParent() + "/" + newName;
-    File newFile = new File(newPath);
+    File newFile = new File(oldFile.getParent(), newName);
     if (oldFile.renameTo(newFile)) {
       model.setState(FileState.RENAME);
       loadFiles(currentPath.getValue());
@@ -158,12 +187,43 @@ public class FileViewModel extends AndroidViewModel {
   }
 
   public void deleteFiles(List<FileManagerModel> items) {
-    new Thread(
-            () -> {
-              for (FileManagerModel item : items) deleteRecursive(new File(item.getPath()));
-              loadFiles(currentPath.getValue());
-            })
-        .start();
+    ioExecutor.execute(
+        () -> {
+          DirStats stats = new DirStats();
+          for (FileManagerModel item : items) collectStats(new File(item.getPath()), stats);
+          int total = stats.totalFiles;
+          int[] deleted = {0};
+
+          List<Future<?>> futures = new ArrayList<>();
+          for (FileManagerModel item : items) {
+            futures.add(
+                ioExecutor.submit(
+                    () -> deleteRecursiveWithProgress(new File(item.getPath()), deleted, total)));
+          }
+          for (Future<?> f : futures) {
+            try {
+              f.get();
+            } catch (Exception ignored) {
+            }
+          }
+
+          deleteProgress.postValue(new DeleteProgress("", 0, 0, false));
+          loadFiles(currentPath.getValue());
+        });
+  }
+
+  private void deleteRecursiveWithProgress(File file, int[] deleted, int total) {
+    if (file.isDirectory()) {
+      File[] children = file.listFiles();
+      if (children != null) {
+        for (File child : children) deleteRecursiveWithProgress(child, deleted, total);
+      }
+      file.delete();
+    } else {
+      file.delete();
+      deleted[0]++;
+      deleteProgress.postValue(new DeleteProgress(file.getName(), deleted[0], total, true));
+    }
   }
 
   private void deleteRecursive(File file) {
@@ -176,72 +236,91 @@ public class FileViewModel extends AndroidViewModel {
 
   public void pasteFiles(
       List<FileManagerModel> sources, String destDir, boolean isCut, OnPasteComplete callback) {
-    new Thread(
-            () -> {
-              boolean success = true;
-              File destFolder = new File(destDir);
-              if (!destFolder.exists()) destFolder.mkdirs();
+    ioExecutor.execute(
+        () -> {
+          boolean success = true;
+          File destFolder = new File(destDir);
+          if (!destFolder.exists()) destFolder.mkdirs();
 
-              long totalBytes = 0;
-              int totalFiles = 0;
-              for (FileManagerModel model : sources) {
-                totalBytes += getDirSize(new File(model.getPath()));
-                totalFiles += countFiles(new File(model.getPath()));
-              }
+          DirStats stats = new DirStats();
+          for (FileManagerModel model : sources) collectStats(new File(model.getPath()), stats);
 
-              long[] bytesCopied = {0};
-              int[] remaining = {totalFiles};
-              long[] lastTime = {System.currentTimeMillis()};
-              long[] lastBytes = {0};
+          long[] bytesCopied = {0};
+          int[] remaining = {stats.totalFiles};
+          long[] lastTime = {System.currentTimeMillis()};
+          long[] lastBytes = {0};
 
-              String fromDir = new File(sources.get(0).getPath()).getParent();
-              String fromName = (fromDir != null) ? new File(fromDir).getName() : "Unknown";
-              String toName = new File(destDir).getName();
+          String fromDir = new File(sources.get(0).getPath()).getParent();
+          String fromName = (fromDir != null) ? new File(fromDir).getName() : "Unknown";
+          String toName = new File(destDir).getName();
 
-              for (FileManagerModel model : sources) {
-                File src = new File(model.getPath());
-                File dest = new File(destFolder, src.getName());
+          for (FileManagerModel model : sources) {
+            File src = new File(model.getPath());
+            File dest = new File(destFolder, src.getName());
 
-                if (isCut) {
-                  if (!src.renameTo(dest)) {
-                    copyRecursiveWithProgress(
-                        src,
-                        dest,
-                        bytesCopied,
-                        remaining,
-                        lastTime,
-                        lastBytes,
-                        totalBytes,
+            if (isCut) {
+
+              if (!src.renameTo(dest)) {
+
+                copyRecursiveFast(
+                    src,
+                    dest,
+                    bytesCopied,
+                    remaining,
+                    lastTime,
+                    lastBytes,
+                    stats.totalBytes,
+                    fromName,
+                    toName);
+                deleteRecursive(src);
+              } else {
+
+                remaining[0]--;
+                copyProgress.postValue(
+                    new CopyProgress(
+                        src.getName(),
                         fromName,
-                        toName);
-                    deleteRecursive(src);
-                  } else {
-                    remaining[0]--;
-                  }
-                } else {
-                  copyRecursiveWithProgress(
-                      src,
-                      dest,
-                      bytesCopied,
-                      remaining,
-                      lastTime,
-                      lastBytes,
-                      totalBytes,
-                      fromName,
-                      toName);
-                }
+                        toName,
+                        remaining[0],
+                        stats.totalBytes,
+                        stats.totalBytes,
+                        0,
+                        remaining[0] > 0));
               }
+            } else {
 
-              copyProgress.postValue(new CopyProgress("", "", "", 0, 0, 0, 0, false));
-              loadFiles(currentPath.getValue());
-              if (callback != null) {
-                new Handler(Looper.getMainLooper()).post(() -> callback.onComplete(success));
-              }
-            })
-        .start();
+              copyRecursiveFast(
+                  src,
+                  dest,
+                  bytesCopied,
+                  remaining,
+                  lastTime,
+                  lastBytes,
+                  stats.totalBytes,
+                  fromName,
+                  toName);
+            }
+          }
+
+          copyProgress.postValue(new CopyProgress("", "", "", 0, 0, 0, 0, false));
+          loadFiles(currentPath.getValue());
+          if (callback != null) {
+            new Handler(Looper.getMainLooper()).post(() -> callback.onComplete(success));
+          }
+        });
   }
 
-  private void copyRecursiveWithProgress(
+  private void collectStats(File f, DirStats stats) {
+    if (f.isFile()) {
+      stats.totalBytes += f.length();
+      stats.totalFiles++;
+    } else {
+      File[] children = f.listFiles();
+      if (children != null) for (File c : children) collectStats(c, stats);
+    }
+  }
+
+  private void copyRecursiveFast(
       File src,
       File dest,
       long[] bytesCopied,
@@ -257,7 +336,7 @@ public class FileViewModel extends AndroidViewModel {
         File[] children = src.listFiles();
         if (children != null) {
           for (File child : children) {
-            copyRecursiveWithProgress(
+            copyRecursiveFast(
                 child,
                 new File(dest, child.getName()),
                 bytesCopied,
@@ -270,55 +349,45 @@ public class FileViewModel extends AndroidViewModel {
           }
         }
       } else {
-        FileInputStream in = new FileInputStream(src);
-        FileOutputStream out = new FileOutputStream(dest);
-        byte[] buffer = new byte[8192];
-        int len;
-        while ((len = in.read(buffer)) != -1) {
-          out.write(buffer, 0, len);
-          bytesCopied[0] += len;
 
-          long now = System.currentTimeMillis();
-          long elapsed = now - lastTime[0];
-          if (elapsed >= 300) {
-            long speed = (bytesCopied[0] - lastBytes[0]) * 1000 / Math.max(elapsed, 1);
-            lastTime[0] = now;
-            lastBytes[0] = bytesCopied[0];
-            copyProgress.postValue(
-                new CopyProgress(
-                    src.getName(),
-                    fromDir,
-                    toDir,
-                    remaining[0],
-                    bytesCopied[0],
-                    totalBytes,
-                    speed,
-                    true));
+        try (FileChannel inCh = new FileInputStream(src).getChannel();
+            FileChannel outCh = new FileOutputStream(dest).getChannel()) {
+
+          long fileSize = inCh.size();
+          long transferred = 0;
+          long chunkSize = BUFFER_SIZE;
+
+          while (transferred < fileSize) {
+            long count = Math.min(chunkSize, fileSize - transferred);
+            long n = inCh.transferTo(transferred, count, outCh);
+            if (n <= 0) break;
+            transferred += n;
+            bytesCopied[0] += n;
+
+            long now = System.currentTimeMillis();
+            long elapsed = now - lastTime[0];
+            if (elapsed >= 300) {
+              long speed = (bytesCopied[0] - lastBytes[0]) * 1000 / Math.max(elapsed, 1);
+              lastTime[0] = now;
+              lastBytes[0] = bytesCopied[0];
+              copyProgress.postValue(
+                  new CopyProgress(
+                      src.getName(),
+                      fromDir,
+                      toDir,
+                      remaining[0],
+                      bytesCopied[0],
+                      totalBytes,
+                      speed,
+                      true));
+            }
           }
         }
-        in.close();
-        out.close();
         remaining[0]--;
       }
     } catch (Exception e) {
       e.printStackTrace();
     }
-  }
-
-  private long getDirSize(File f) {
-    if (f.isFile()) return f.length();
-    long size = 0;
-    File[] children = f.listFiles();
-    if (children != null) for (File c : children) size += getDirSize(c);
-    return size;
-  }
-
-  private int countFiles(File f) {
-    if (f.isFile()) return 1;
-    int count = 0;
-    File[] children = f.listFiles();
-    if (children != null) for (File c : children) count += countFiles(c);
-    return count;
   }
 
   public void createFolder(String folderName) {
@@ -343,6 +412,12 @@ public class FileViewModel extends AndroidViewModel {
         e.printStackTrace();
       }
     }
+  }
+
+  @Override
+  protected void onCleared() {
+    super.onCleared();
+    ioExecutor.shutdown();
   }
 
   public interface OnPasteComplete {

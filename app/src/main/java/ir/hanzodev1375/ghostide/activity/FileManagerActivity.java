@@ -25,14 +25,17 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.skydoves.powermenu.MenuAnimation;
 import com.skydoves.powermenu.PowerMenu;
 import com.skydoves.powermenu.PowerMenuItem;
+import ir.ghostide.logcat.BottomSheetLogView;
 import ir.hanzodev1375.components.RenameDialogFragment;
 import ir.hanzodev1375.components.TextInputDialogFragment;
+import ir.hanzodev1375.components.ui.ProfileView;
 import ir.hanzodev1375.ghostide.adapters.FileManagerAdapter;
 import ir.hanzodev1375.ghostide.adapters.ToolbarAdapter;
 import ir.hanzodev1375.ghostide.ai.chat.AiChatActivity;
 import ir.hanzodev1375.ghostide.databinding.ActivityFilemanagerBinding;
 import ir.hanzodev1375.ghostide.databinding.SelectionPanelBinding;
 import ir.hanzodev1375.ghostide.dialogs.CopyProgressDialog;
+import ir.hanzodev1375.ghostide.dialogs.DeleteProgressDialog;
 import ir.hanzodev1375.ghostide.jgit.GitHubClient;
 import ir.hanzodev1375.ghostide.jgit.GitHubProfileSheet;
 import ir.hanzodev1375.ghostide.jgit.fragments.GitBottomSheetFragment;
@@ -66,14 +69,12 @@ public class FileManagerActivity extends BaseCompat
   private SelectionPanelBinding selectionPanelBinding;
   private FileManagerModel fileModels;
   private UpadteAppView app;
+  private ProfileView profileview;
   private NetworkChangeReceiver networkChangeReceiver;
   private Set<String> itemname =
       new HashSet<>(Arrays.asList(".html", ".java", ".cpp", ".css", ".js", ".py", ".json"));
-
-  // ==================== Copy Progress Dialog ====================
   private CopyProgressDialog copyProgressDialog;
-
-  // ==============================================================
+  private DeleteProgressDialog deleteProgressDialog;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -138,7 +139,6 @@ public class FileManagerActivity extends BaseCompat
               if (path != null) bind.navmodel.setFile(new File(path));
             });
 
-    // ==================== Observe CopyProgress ====================
     copyProgressDialog = new CopyProgressDialog(this);
 
     viewModel
@@ -154,8 +154,22 @@ public class FileManagerActivity extends BaseCompat
                 copyProgressDialog.dismiss();
               }
             });
-    // ==============================================================
 
+    deleteProgressDialog = new DeleteProgressDialog(this);
+
+    viewModel
+        .getDeleteProgress()
+        .observe(
+            this,
+            progress -> {
+              if (progress == null) return;
+              if (progress.isRunning) {
+                if (!deleteProgressDialog.isShowing()) deleteProgressDialog.show();
+                deleteProgressDialog.update(progress);
+              } else {
+                deleteProgressDialog.dismiss();
+              }
+            });
     adapter.setOnItemClickListener(
         (item, pos) -> {
           if (item.isDirectory()) {
@@ -167,6 +181,11 @@ public class FileManagerActivity extends BaseCompat
           if (currentPath != null) {
             bind.gitActionButton.setVisibility(
                 isGitRepository(currentPath) ? View.VISIBLE : View.GONE);
+          }
+          if (bind.ser.isShow()) {
+            bind.ser.hide();
+            bind.fab.setVisibility(View.VISIBLE);
+            bind.ser.setQuery("");
           }
         });
 
@@ -389,6 +408,7 @@ public class FileManagerActivity extends BaseCompat
           if (pendingClipboard.isEmpty()) return;
           String currentDir = viewModel.getCurrentPath().getValue();
           if (currentDir != null) {
+            copyProgressDialog.setMoveMode(isCutOperation);
             viewModel.pasteFiles(
                 pendingClipboard,
                 currentDir,
@@ -564,6 +584,8 @@ public class FileManagerActivity extends BaseCompat
     GitHubClient gitHub = new GitHubClient(this);
     if (gitHub.isLoggedIn()) {
       bind.userNameText.setText(gitHub.getName());
+      profileview = new ProfileView(this);
+      profileview.bindImageView(bind.userAvatar, gitHub.getAvatarUrl(), R.drawable.user);
       Glide.with(this)
           .load(gitHub.getAvatarUrl())
           .circleCrop()
@@ -608,8 +630,9 @@ public class FileManagerActivity extends BaseCompat
 
   void stepButton() {
     var menu = new PowerMenu.Builder(this).build();
-    menu.addItem(new PowerMenuItem("Setting"));
-    menu.addItem(new PowerMenuItem("Search"));
+    menu.addItem(new PowerMenuItem(getString(R.string.settings_title)));
+    menu.addItem(new PowerMenuItem(getString(R.string.search_hint)));
+    menu.addItem(new PowerMenuItem(getString(R.string.openlogcat)));
     menu.setAutoDismiss(true);
     menu.setShowBackground(false);
     menu.setAnimation(MenuAnimation.FADE);
@@ -630,6 +653,10 @@ public class FileManagerActivity extends BaseCompat
                 bind.fab.setVisibility(View.VISIBLE);
               }
             }
+            case 2 -> {
+              var log = new BottomSheetLogView();
+              log.show(getSupportFragmentManager(), "log");
+            }
           }
         });
     menu.showAsDropDown(bind.btnSettings);
@@ -638,7 +665,8 @@ public class FileManagerActivity extends BaseCompat
   void stepSearch() {
     bind.ser.setOnTextChangedListener(
         qer -> {
-          if (qer.length() > 0) adapter.search(qer); else adapter.search("");
+          if (qer.length() > 0) adapter.search(qer);
+          else adapter.search("");
         });
     bind.ser.setIconClose(R.drawable.ic_close);
     bind.ser.setIconSearch(R.drawable.outline_search);

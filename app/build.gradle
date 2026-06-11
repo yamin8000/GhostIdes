@@ -52,6 +52,7 @@ android {
 
 dependencies {
     implementation project(path: ":editor")
+    implementation project(path: ":logcat")
     implementation project(path: ":materialfileicon")
     implementation project(path: ":components")
     implementation project(path: ":jgit")
@@ -69,7 +70,6 @@ dependencies {
     implementation(libs.utilcode)
     annotationProcessor(libs.glide.compiler) 
     implementation(libs.glide.avif.integration)
-    //implementation(libs.jgit)
     implementation(libs.androidx.recyclerview.selection)
     implementation(libs.androidx.swiperefreshlayout)
   

@@ -18,11 +18,11 @@ dependencyResolutionManagement {
 
 rootProject.name = "Ghostide"
 
-include(":app")
+include(":app",":logcat")
 include(':editor')
 include(':components')
 include(':materialfileicon')
 include(':aimodel')
-include ':jgit'
-include ':javac'
-include ':prddownloader'
+include(':jgit')
+include(':javac')
+include(':prddownloader')

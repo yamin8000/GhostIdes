@@ -142,5 +142,5 @@
     <string name="editor_translate">ترجمه</string>
     <string name="pref_translate_target_lang">زبان مقصد ترجمه</string>
     <string name="pref_translate_target_lang_desc">زبان مقصد هنگام ترجمه متن انتخابی</string>
-
+    <string name="openlogcat">Open log cat</string>
 </resources>
