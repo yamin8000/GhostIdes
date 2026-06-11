@@ -32,6 +32,7 @@ import ir.hanzodev1375.ghostide.adapters.ToolbarAdapter;
 import ir.hanzodev1375.ghostide.ai.chat.AiChatActivity;
 import ir.hanzodev1375.ghostide.databinding.ActivityFilemanagerBinding;
 import ir.hanzodev1375.ghostide.databinding.SelectionPanelBinding;
+import ir.hanzodev1375.ghostide.dialogs.CopyProgressDialog;
 import ir.hanzodev1375.ghostide.jgit.GitHubClient;
 import ir.hanzodev1375.ghostide.jgit.GitHubProfileSheet;
 import ir.hanzodev1375.ghostide.jgit.fragments.GitBottomSheetFragment;
@@ -69,13 +70,18 @@ public class FileManagerActivity extends BaseCompat
   private Set<String> itemname =
       new HashSet<>(Arrays.asList(".html", ".java", ".cpp", ".css", ".js", ".py", ".json"));
 
+  // ==================== Copy Progress Dialog ====================
+  private CopyProgressDialog copyProgressDialog;
+
+  // ==============================================================
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     bind = ActivityFilemanagerBinding.inflate(getLayoutInflater());
     setContentView(bind.getRoot());
     setupInsets();
-    setupSearchLayoutInsets(); // <-- اضافه شد: هماهنگی SearchLayout با کیبورد و FAB
+    setupSearchLayoutInsets();
 
     networkChangeReceiver = new NetworkChangeReceiver(this);
     IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
@@ -90,6 +96,7 @@ public class FileManagerActivity extends BaseCompat
               }
             },
             100);
+
     bind.headline.setBackground(ShapeUtil.shape(40f, this));
     viewModel = new ViewModelProvider(this).get(FileViewModel.class);
     adapter = new FileManagerAdapter(this);
@@ -99,17 +106,15 @@ public class FileManagerActivity extends BaseCompat
     app = new UpadteAppView(this, bind.downloader, () -> {});
     stepSearch();
     adapter.setupSelectionTracker(bind.rvfiles);
+
     viewModel
         .getFiles()
         .observe(
             this,
             files -> {
-              fileModels = files.get(0);
+              if (files != null && !files.isEmpty()) fileModels = files.get(0);
               adapter.submitList(new ArrayList<>(files));
-              bind.rvfiles.post(
-                  () -> {
-                    adapter.notifyDataSetChanged();
-                  });
+              bind.rvfiles.post(() -> adapter.notifyDataSetChanged());
               if (files == null || files.isEmpty()) {
                 bind.emptystates.setVisibility(View.VISIBLE);
                 bind.rvfiles.setVisibility(View.GONE);
@@ -118,20 +123,38 @@ public class FileManagerActivity extends BaseCompat
                 bind.rvfiles.setVisibility(View.VISIBLE);
               }
             });
+
     viewModel
         .getIsLoading()
         .observe(
             this, loading -> bind.loadingprogass.setVisibility(loading ? View.VISIBLE : View.GONE));
+
     viewModel.savePath(true);
     viewModel
         .getCurrentPath()
         .observe(
             this,
             path -> {
-              if (path != null) {
-                bind.navmodel.setFile(new File(path));
+              if (path != null) bind.navmodel.setFile(new File(path));
+            });
+
+    // ==================== Observe CopyProgress ====================
+    copyProgressDialog = new CopyProgressDialog(this);
+
+    viewModel
+        .getCopyProgress()
+        .observe(
+            this,
+            progress -> {
+              if (progress == null) return;
+              if (progress.isRunning) {
+                if (!copyProgressDialog.isShowing()) copyProgressDialog.show();
+                copyProgressDialog.update(progress);
+              } else {
+                copyProgressDialog.dismiss();
               }
             });
+    // ==============================================================
 
     adapter.setOnItemClickListener(
         (item, pos) -> {
@@ -166,28 +189,27 @@ public class FileManagerActivity extends BaseCompat
         .getFab()
         .setOnClickListener(
             v -> {
-              if (!bind.fab.isExpanded()) {
-                bind.fab.expand();
-              } else bind.fab.collapse();
+              if (!bind.fab.isExpanded()) bind.fab.expand();
+              else bind.fab.collapse();
             });
 
     bind.navmodel
         .getAdapter()
         .setOnItemClickListener((view, nav, pos) -> viewModel.navigateTo(nav.getFilePath()));
+
     stepMoreAdapter();
     setupSelectionPanel();
+
     adapter.setSelectionStateListener(
         new FileManagerAdapter.SelectionStateListener() {
           @Override
           public void onSelectionChanged(int count) {
-
             if (count == 0 && pendingClipboard.isEmpty()) {
               if (selectionPanel != null) selectionPanel.setVisibility(View.GONE);
             } else if (count > 0) {
               selectionPanel.setVisibility(View.VISIBLE);
               selectionCount.setText(getString(R.string.selected_items_count, count));
             } else if (count == 0 && !pendingClipboard.isEmpty()) {
-
               selectionCount.setText("0");
               selectionPanel.setVisibility(View.VISIBLE);
             }
@@ -198,67 +220,50 @@ public class FileManagerActivity extends BaseCompat
 
           @Override
           public void onSelectionModeEnded() {
-
             if (pendingClipboard.isEmpty() && selectionPanel != null) {
               selectionPanel.setVisibility(View.GONE);
             }
           }
         });
+
     bind.buttonAi.setOnClickListener(
-        v -> {
-          startActivity(new Intent(getApplicationContext(), AiChatActivity.class));
-        });
+        v -> startActivity(new Intent(getApplicationContext(), AiChatActivity.class)));
 
     setOnBackPress();
     setupGitButton();
     observePathForGit();
   }
 
-  // ========== اضافه شده: مدیریت حاشیه SearchLayout متناسب با FAB و کیبورد ==========
   private void setupSearchLayoutInsets() {
-    // صبر می‌کنیم تا layout کامل شود و موقعیت FAB مشخص گردد
     bind.fab.post(
         () -> {
           ViewCompat.setOnApplyWindowInsetsListener(
               bind.ser,
               (view, insets) -> {
                 int imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
-                int systemBarsBottom =
-                    insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
-
                 int fabBottomMargin = getFabBottomMargin();
                 int targetBottomMargin;
-
                 if (imeHeight > 0) {
-                  // کیبورد باز است: سرچ باکس را دقیقاً بالای کیبورد قرار بده
                   targetBottomMargin = imeHeight;
                 } else {
-                  // کیبورد بسته: سرچ باکس را بالای FAB قرار بده (با فاصله 8dp)
                   targetBottomMargin =
                       fabBottomMargin + (int) (8 * getResources().getDisplayMetrics().density);
                 }
-
                 ViewGroup.MarginLayoutParams params =
                     (ViewGroup.MarginLayoutParams) view.getLayoutParams();
                 params.bottomMargin = targetBottomMargin;
                 view.setLayoutParams(params);
-
                 return insets;
               });
-
-          // درخواست اعمال مجدد insets
           ViewCompat.requestApplyInsets(bind.ser);
         });
   }
 
   private int getFabBottomMargin() {
-    // فاصله از پایین صفحه تا انتهای FAB را برمی‌گرداند
     int fabBottom = bind.fab.getBottom();
     int screenHeight = bind.fab.getRootView().getHeight();
     return screenHeight - fabBottom;
   }
-
-  // ====================================================================
 
   void setupClick(String path, String name) {
     int lastDot = name.lastIndexOf(".");
@@ -272,7 +277,6 @@ public class FileManagerActivity extends BaseCompat
       Intent i = new Intent(FileManagerActivity.this, ThemeEditorActivity.class);
       i.putExtra(ThemeEditorActivity.EXTRA_THEME_PATH, path);
       startActivity(i);
-
     } else {
       Toast.makeText(this, getString(R.string.error_file_format_not_supported), Toast.LENGTH_SHORT)
           .show();
@@ -284,11 +288,11 @@ public class FileManagerActivity extends BaseCompat
         v -> {
           String repoPath = findGitRepositoryPath();
           if (repoPath == null) {
-            Toast.makeText(this, "Git dir nlt found", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Git dir not found", Toast.LENGTH_LONG).show();
             return;
           }
-          var bottomSheet = GitBottomSheetFragment.newInstance(repoPath);
-          bottomSheet.show(getSupportFragmentManager(), "git_bottom_sheet");
+          GitBottomSheetFragment.newInstance(repoPath)
+              .show(getSupportFragmentManager(), "git_bottom_sheet");
         });
   }
 
@@ -298,9 +302,7 @@ public class FileManagerActivity extends BaseCompat
     File dir = new File(currentDir);
     while (dir != null) {
       File gitDir = new File(dir, ".git");
-      if (gitDir.exists() && gitDir.isDirectory()) {
-        return dir.getAbsolutePath();
-      }
+      if (gitDir.exists() && gitDir.isDirectory()) return dir.getAbsolutePath();
       dir = dir.getParentFile();
     }
     return null;
@@ -328,7 +330,6 @@ public class FileManagerActivity extends BaseCompat
   private void setupSelectionPanel() {
     selectionPanelBinding = bind.selectionPanel;
     selectionPanel = selectionPanelBinding.getRoot();
-
     selectionCount = selectionPanelBinding.txtSelectedCount;
     btnCopy = selectionPanelBinding.btnCopy;
     btnCut = selectionPanelBinding.btnCut;
@@ -337,6 +338,7 @@ public class FileManagerActivity extends BaseCompat
     btnClose = selectionPanelBinding.btnClose;
     btnSelectall = selectionPanelBinding.btnSelectall;
     selectionPanelBinding.getRoot().setBackground(ShapeUtil.shapeCustomView(this));
+
     btnCopy.setOnClickListener(
         v -> {
           List<FileManagerModel> selected = adapter.getSelectedItems();
@@ -345,7 +347,6 @@ public class FileManagerActivity extends BaseCompat
             isCutOperation = false;
             adapter.clearSelection();
             btnPaste.setColorFilter(0xff00ff00);
-
             selectionPanel.setVisibility(View.VISIBLE);
             selectionCount.setText("0");
           }
@@ -363,6 +364,7 @@ public class FileManagerActivity extends BaseCompat
             selectionCount.setText("0");
           }
         });
+
     btnDelete.setOnClickListener(
         v -> {
           List<FileManagerModel> selected = adapter.getSelectedItems();
@@ -381,6 +383,7 @@ public class FileManagerActivity extends BaseCompat
           }
         });
 
+    // ==================== Paste با Progress ====================
     btnPaste.setOnClickListener(
         v -> {
           if (pendingClipboard.isEmpty()) return;
@@ -391,19 +394,16 @@ public class FileManagerActivity extends BaseCompat
                 currentDir,
                 isCutOperation,
                 success -> {
-                  if (success) {
-                    pendingClipboard.clear();
-                    btnPaste.clearColorFilter();
-                    adapter.clearSelection();
-                    selectionPanel.setVisibility(View.GONE);
-                    adapter.notifyDataSetChanged();
-
-                  } else {
-                    Toast.makeText(this, "Paste failed", Toast.LENGTH_SHORT).show();
-                  }
+                  pendingClipboard.clear();
+                  btnPaste.clearColorFilter();
+                  adapter.clearSelection();
+                  selectionPanel.setVisibility(View.GONE);
+                  adapter.notifyDataSetChanged();
+                  if (!success) Toast.makeText(this, "Paste failed", Toast.LENGTH_SHORT).show();
                 });
           }
         });
+    // ===========================================================
 
     btnSelectall.setOnClickListener(
         v -> {
@@ -414,6 +414,7 @@ public class FileManagerActivity extends BaseCompat
             selectionPanel.setVisibility(View.VISIBLE);
           }
         });
+
     btnClose.setOnClickListener(
         v -> {
           pendingClipboard.clear();
@@ -426,18 +427,15 @@ public class FileManagerActivity extends BaseCompat
   }
 
   private void setupInsets() {
-
     ViewCompat.setOnApplyWindowInsetsListener(
         bind.coordinator,
         (view, insets) -> {
           Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
           int imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
           bind.headtop.setPadding(0, systemBars.top, 0, 0);
-
           bind.fab.post(
               () -> {
                 int fabSpace = bind.fab.getHeight() + 48;
-                // اگر کیبورد باز است padding پایینی RecyclerView را افزایش بده
                 int extraBottom = (imeBottom > 0) ? imeBottom : 0;
                 bind.rvfiles.setPadding(
                     bind.rvfiles.getPaddingLeft(),
@@ -484,26 +482,21 @@ public class FileManagerActivity extends BaseCompat
   }
 
   void stepMoreAdapter() {
-
     adapter.setOnMoreClickListener(
         (filemodel, view, pos) -> {
           PowerMenu menu = new PowerMenu.Builder(view.getContext()).setIsMaterial(true).build();
-
           menu.addItem(new PowerMenuItem(getString(R.string.removed)));
           menu.addItem(new PowerMenuItem(getString(R.string.rename)));
           menu.setMenuColor(
               MaterialColors.getColor(
                   view.getContext(), com.google.android.material.R.attr.colorSurface, 0));
-
           menu.setTextColor(
               MaterialColors.getColor(
                   view.getContext(), com.google.android.material.R.attr.colorOnSurface, 0));
-
           menu.setShowBackground(false);
           menu.setAutoDismiss(true);
           menu.setMenuRadius(30f);
           menu.setAnimation(MenuAnimation.FADE);
-
           menu.setOnMenuItemClickListener(
               (index, item) -> {
                 switch (index) {
@@ -514,27 +507,16 @@ public class FileManagerActivity extends BaseCompat
 
           int[] location = new int[2];
           view.getLocationOnScreen(location);
-
           int x = location[0];
           int y = location[1];
-
           var dm = view.getResources().getDisplayMetrics();
           int screenHeight = dm.heightPixels;
-
           int menuHeight = menu.getContentViewHeight();
-
-          if (menuHeight <= 0) {
-            menuHeight = 200;
-          }
-
-          int spaceAbove = y;
+          if (menuHeight <= 0) menuHeight = 200;
           int spaceBelow = screenHeight - (y + view.getHeight());
-
-          if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
-            y -= menuHeight;
-          } else {
-            y += view.getHeight();
-          }
+          int spaceAbove = y;
+          if (spaceBelow < menuHeight && spaceAbove > spaceBelow) y -= menuHeight;
+          else y += view.getHeight();
           menu.showAtLocation(view, Gravity.TOP | Gravity.START, x, y);
         });
   }
@@ -544,27 +526,18 @@ public class FileManagerActivity extends BaseCompat
         RenameDialogFragment.getInstance(
             model.getName(),
             (prefix, extension) -> {
-              String displayName;
-              if (!TextUtils.isEmpty(extension)) {
-                displayName = prefix + "." + extension;
-              } else {
-                displayName = prefix;
-              }
+              String displayName =
+                  !TextUtils.isEmpty(extension) ? prefix + "." + extension : prefix;
               viewModel.renameFile(model, displayName);
             });
     dialog.show(getSupportFragmentManager(), RenameDialogFragment.TAG);
   }
 
   void removedItem(FileManagerModel model) {
-
     new MaterialAlertDialogBuilder(this)
         .setTitle(getString(R.string.removed))
         .setMessage(getString(R.string.removedmassges, model.getName() + "?"))
-        .setPositiveButton(
-            getString(R.string.ok),
-            (d, w) -> {
-              viewModel.deleteFile(model);
-            })
+        .setPositiveButton(getString(R.string.ok), (d, w) -> viewModel.deleteFile(model))
         .setNegativeButton(getString(R.string.cancel), null)
         .show();
   }
@@ -620,7 +593,6 @@ public class FileManagerActivity extends BaseCompat
                 .show();
           }
         });
-
     bind.btnSettings.setOnClickListener(v -> stepButton());
   }
 
@@ -637,7 +609,7 @@ public class FileManagerActivity extends BaseCompat
   void stepButton() {
     var menu = new PowerMenu.Builder(this).build();
     menu.addItem(new PowerMenuItem("Setting"));
-    menu.addItem(new PowerMenuItem("Serach"));
+    menu.addItem(new PowerMenuItem("Search"));
     menu.setAutoDismiss(true);
     menu.setShowBackground(false);
     menu.setAnimation(MenuAnimation.FADE);
@@ -660,14 +632,13 @@ public class FileManagerActivity extends BaseCompat
             }
           }
         });
-
     menu.showAsDropDown(bind.btnSettings);
   }
 
   void stepSearch() {
     bind.ser.setOnTextChangedListener(
-        (qer) -> {
-          if (qer.length() > 0) adapter.search(qer);
+        qer -> {
+          if (qer.length() > 0) adapter.search(qer); else adapter.search("");
         });
     bind.ser.setIconClose(R.drawable.ic_close);
     bind.ser.setIconSearch(R.drawable.outline_search);

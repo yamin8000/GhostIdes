@@ -205,6 +205,7 @@ public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.
     this.searchQuery = query == null ? "" : query.trim();
     if (searchQuery.isEmpty()) {
       submitList(new ArrayList<>(itemsFull));
+      notifyDataSetChanged();
       return;
     }
     String lowerQuery = searchQuery.toLowerCase();
