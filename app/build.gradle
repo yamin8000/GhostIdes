@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.glide)
     implementation(libs.powermenu)
+    implementation(libs.zip4j)
     implementation(libs.utilcode)
     annotationProcessor(libs.glide.compiler) 
     implementation(libs.glide.avif.integration)

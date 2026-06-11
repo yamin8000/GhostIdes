@@ -31,6 +31,7 @@ import ir.hanzodev1375.components.TextInputDialogFragment;
 import ir.hanzodev1375.components.ui.ProfileView;
 import ir.hanzodev1375.ghostide.adapters.FileManagerAdapter;
 import ir.hanzodev1375.ghostide.adapters.ToolbarAdapter;
+import ir.hanzodev1375.ghostide.adapters.ZipBrowserAdapter;
 import ir.hanzodev1375.ghostide.ai.chat.AiChatActivity;
 import ir.hanzodev1375.ghostide.databinding.ActivityFilemanagerBinding;
 import ir.hanzodev1375.ghostide.databinding.SelectionPanelBinding;
@@ -40,6 +41,7 @@ import ir.hanzodev1375.ghostide.jgit.GitHubClient;
 import ir.hanzodev1375.ghostide.jgit.GitHubProfileSheet;
 import ir.hanzodev1375.ghostide.jgit.fragments.GitBottomSheetFragment;
 import ir.hanzodev1375.ghostide.models.FileManagerModel;
+import ir.hanzodev1375.ghostide.models.ZipEntryModel;
 import ir.hanzodev1375.ghostide.mvvm.viewmodel.FileViewModel;
 import ir.hanzodev1375.ghostide.plugin.PluginManager;
 import ir.hanzodev1375.ghostide.utils.MarginItemDecoration;
@@ -54,6 +56,8 @@ import java.util.List;
 import ir.hanzodev1375.ghostide.R;
 import java.util.Set;
 import ninja.coder.appuploader.main.appupdate.UpadteAppView;
+import net.lingala.zip4j.ZipFile;
+import net.lingala.zip4j.exception.ZipException;
 
 public class FileManagerActivity extends BaseCompat
     implements NetworkChangeReceiver.CallBackNetWork {
@@ -61,6 +65,7 @@ public class FileManagerActivity extends BaseCompat
   private ActivityFilemanagerBinding bind;
   private FileViewModel viewModel;
   private FileManagerAdapter adapter;
+  private ZipBrowserAdapter zipAdapter;
   private View selectionPanel;
   private TextView selectionCount;
   private ImageView btnCopy, btnCut, btnDelete, btnPaste, btnClose, btnSelectall;
@@ -75,6 +80,8 @@ public class FileManagerActivity extends BaseCompat
       new HashSet<>(Arrays.asList(".html", ".java", ".cpp", ".css", ".js", ".py", ".json"));
   private CopyProgressDialog copyProgressDialog;
   private DeleteProgressDialog deleteProgressDialog;
+  private boolean isZipMode = false;
+  private String currentZipFilePath = null;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -140,7 +147,6 @@ public class FileManagerActivity extends BaseCompat
             });
 
     copyProgressDialog = new CopyProgressDialog(this);
-
     viewModel
         .getCopyProgress()
         .observe(
@@ -156,7 +162,6 @@ public class FileManagerActivity extends BaseCompat
             });
 
     deleteProgressDialog = new DeleteProgressDialog(this);
-
     viewModel
         .getDeleteProgress()
         .observe(
@@ -170,10 +175,13 @@ public class FileManagerActivity extends BaseCompat
                 deleteProgressDialog.dismiss();
               }
             });
+
     adapter.setOnItemClickListener(
         (item, pos) -> {
           if (item.isDirectory()) {
             viewModel.navigateTo(item.getPath());
+          } else if (item.getPath().toLowerCase().endsWith(".zip")) {
+            enterZipMode(item.getPath());
           } else {
             setupClick(item.getPath(), item.getName());
           }
@@ -251,6 +259,157 @@ public class FileManagerActivity extends BaseCompat
     setOnBackPress();
     setupGitButton();
     observePathForGit();
+    initZipBrowserAdapter();
+  }
+
+  private void initZipBrowserAdapter() {
+    zipAdapter = new ZipBrowserAdapter(this);
+    zipAdapter.setZipLoadListener(
+        new ZipBrowserAdapter.ZipLoadListener() {
+          @Override
+          public void onLoadStarted() {
+            bind.loadingprogass.setVisibility(View.VISIBLE);
+          }
+
+          @Override
+          public void onLoadFinished(String internalPath, boolean hasParent) {
+            bind.loadingprogass.setVisibility(View.GONE);
+          }
+
+          @Override
+          public void onLoadError(String message) {
+            bind.loadingprogass.setVisibility(View.GONE);
+            Toast.makeText(FileManagerActivity.this, "خطا: " + message, Toast.LENGTH_SHORT).show();
+            exitZipMode();
+          }
+        });
+    zipAdapter.setOnItemClickListener(
+        (item, position) -> {
+          if (item.isDirectory()) {
+            zipAdapter.loadZip(currentZipFilePath, item.getEntryPath());
+          } else {
+            extractAndOpenZipEntry(item);
+          }
+        });
+    zipAdapter.setOnMoreClickListener(
+        (item, anchor, pos) -> {
+          PowerMenu menu = new PowerMenu.Builder(anchor.getContext()).setIsMaterial(true).build();
+          menu.addItem(new PowerMenuItem(getString(R.string.removed)));
+          menu.addItem(new PowerMenuItem(getString(R.string.rename)));
+          menu.setMenuColor(
+              MaterialColors.getColor(
+                  anchor.getContext(), com.google.android.material.R.attr.colorSurface, 0));
+          menu.setTextColor(
+              MaterialColors.getColor(
+                  anchor.getContext(), com.google.android.material.R.attr.colorOnSurface, 0));
+          menu.setShowBackground(false);
+          menu.setAutoDismiss(true);
+          menu.setMenuRadius(30f);
+          menu.setAnimation(MenuAnimation.FADE);
+          menu.setOnMenuItemClickListener(
+              (index, menuItem) -> {
+                if (index == 0) {
+                  new MaterialAlertDialogBuilder(FileManagerActivity.this)
+                      .setTitle(getString(R.string.removed))
+                      .setMessage(getString(R.string.removedmassges, item.getName() + "?"))
+                      .setPositiveButton(getString(R.string.ok), (d, w) -> {})
+                      .setNegativeButton(getString(R.string.cancel), null)
+                      .show();
+                } else if (index == 1) {
+                  Toast.makeText(
+                          FileManagerActivity.this,
+                          "Rename in ZIP not supported",
+                          Toast.LENGTH_SHORT)
+                      .show();
+                }
+              });
+          int[] location = new int[2];
+          anchor.getLocationOnScreen(location);
+          int x = location[0];
+          int y = location[1];
+          var dm = anchor.getResources().getDisplayMetrics();
+          int screenHeight = dm.heightPixels;
+          int menuHeight = menu.getContentViewHeight();
+          if (menuHeight <= 0) menuHeight = 200;
+          int spaceBelow = screenHeight - (y + anchor.getHeight());
+          int spaceAbove = y;
+          if (spaceBelow < menuHeight && spaceAbove > spaceBelow) y -= menuHeight;
+          else y += anchor.getHeight();
+          menu.showAtLocation(anchor, Gravity.TOP | Gravity.START, x, y);
+        });
+    zipAdapter.setSelectionStateListener(
+        new ZipBrowserAdapter.SelectionStateListener() {
+          @Override
+          public void onSelectionChanged(int count) {
+            if (count == 0 && pendingClipboard.isEmpty()) {
+              if (selectionPanel != null) selectionPanel.setVisibility(View.GONE);
+            } else if (count > 0) {
+              selectionPanel.setVisibility(View.VISIBLE);
+              selectionCount.setText(getString(R.string.selected_items_count, count));
+            } else if (count == 0 && !pendingClipboard.isEmpty()) {
+              selectionCount.setText("0");
+              selectionPanel.setVisibility(View.VISIBLE);
+            }
+          }
+
+          @Override
+          public void onSelectionModeStarted() {}
+
+          @Override
+          public void onSelectionModeEnded() {}
+        });
+  }
+
+  private void enterZipMode(String zipFilePath) {
+    isZipMode = true;
+    currentZipFilePath = zipFilePath;
+    bind.rvfiles.setAdapter(zipAdapter);
+    zipAdapter.setupSelectionTracker(bind.rvfiles);
+    zipAdapter.loadZip(zipFilePath, "");
+    bind.fab.setVisibility(View.GONE);
+    bind.gitActionButton.setVisibility(View.GONE);
+    bind.navmodel.setVisibility(View.GONE);
+  }
+
+  private void exitZipMode() {
+    isZipMode = false;
+    currentZipFilePath = null;
+    bind.rvfiles.setAdapter(adapter);
+    adapter.setupSelectionTracker(bind.rvfiles);
+    viewModel.loadFiles(viewModel.getCurrentPath().getValue());
+    bind.fab.setVisibility(View.VISIBLE);
+    bind.navmodel.setVisibility(View.VISIBLE);
+    String currentPath = viewModel.getCurrentPath().getValue();
+    if (currentPath != null) {
+      bind.gitActionButton.setVisibility(isGitRepository(currentPath) ? View.VISIBLE : View.GONE);
+    }
+  }
+
+  private void extractAndOpenZipEntry(ZipEntryModel entry) {
+    File cacheDir = new File(getCacheDir(), "zip_extract");
+    if (!cacheDir.exists()) cacheDir.mkdirs();
+    File outFile = new File(cacheDir, entry.getName());
+    new Thread(
+            () -> {
+              try (ZipFile zipFile = new ZipFile(entry.getParentZipPath())) {
+                zipFile.extractFile(
+                    entry.getEntryPath(), cacheDir.getAbsolutePath(), entry.getName());
+                runOnUiThread(
+                    () -> {
+                      Intent intent = new Intent(FileManagerActivity.this, EditorActivity.class);
+                      intent.putExtra("file_path", outFile.getAbsolutePath());
+                      intent.putExtra("file_name", entry.getName());
+                      startActivity(intent);
+                    });
+              } catch (Exception e) {
+                runOnUiThread(
+                    () ->
+                        Toast.makeText(
+                                FileManagerActivity.this, "خطا در استخراج فایل", Toast.LENGTH_SHORT)
+                            .show());
+              }
+            })
+        .start();
   }
 
   private void setupSearchLayoutInsets() {
@@ -402,7 +561,6 @@ public class FileManagerActivity extends BaseCompat
           }
         });
 
-    // ==================== Paste با Progress ====================
     btnPaste.setOnClickListener(
         v -> {
           if (pendingClipboard.isEmpty()) return;
@@ -423,7 +581,6 @@ public class FileManagerActivity extends BaseCompat
                 });
           }
         });
-    // ===========================================================
 
     btnSelectall.setOnClickListener(
         v -> {
@@ -481,21 +638,27 @@ public class FileManagerActivity extends BaseCompat
             new OnBackPressedCallback(true) {
               @Override
               public void handleOnBackPressed() {
-                if (viewModel.getCurrentPath().getValue() != null
-                    && !viewModel.getCurrentPath().getValue().equals("/storage/emulated/0")) {
-                  viewModel.navigateUp();
-                  String currentPath = viewModel.getCurrentPath().getValue();
-                  if (currentPath != null) {
-                    bind.gitActionButton.setVisibility(
-                        isGitRepository(currentPath) ? View.VISIBLE : View.GONE);
+                if (isZipMode) {
+                  if (!zipAdapter.navigateUp()) {
+                    exitZipMode();
                   }
                 } else {
-                  new MaterialAlertDialogBuilder(FileManagerActivity.this)
-                      .setTitle(getString(R.string.dialog_exit_title))
-                      .setMessage(getString(R.string.dialog_exit_message))
-                      .setNegativeButton(getString(R.string.ok), (c, f) -> finishAffinity())
-                      .setPositiveButton(getString(R.string.cancel), null)
-                      .show();
+                  if (viewModel.getCurrentPath().getValue() != null
+                      && !viewModel.getCurrentPath().getValue().equals("/storage/emulated/0")) {
+                    viewModel.navigateUp();
+                    String currentPath = viewModel.getCurrentPath().getValue();
+                    if (currentPath != null) {
+                      bind.gitActionButton.setVisibility(
+                          isGitRepository(currentPath) ? View.VISIBLE : View.GONE);
+                    }
+                  } else {
+                    new MaterialAlertDialogBuilder(FileManagerActivity.this)
+                        .setTitle(getString(R.string.dialog_exit_title))
+                        .setMessage(getString(R.string.dialog_exit_message))
+                        .setNegativeButton(getString(R.string.ok), (c, f) -> finishAffinity())
+                        .setPositiveButton(getString(R.string.cancel), null)
+                        .show();
+                  }
                 }
               }
             });
@@ -524,7 +687,6 @@ public class FileManagerActivity extends BaseCompat
                   case 1 -> renameItem(filemodel);
                 }
               });
-
           int[] location = new int[2];
           view.getLocationOnScreen(location);
           int x = location[0];
@@ -595,7 +757,6 @@ public class FileManagerActivity extends BaseCompat
       bind.userNameText.setText(getString(R.string.github_account_not_logged_in));
       bind.userAvatar.setImageResource(R.drawable.user);
     }
-
     bind.userAvatar.setOnClickListener(
         v -> {
           if (gitHub.isLoggedIn()) {
@@ -622,9 +783,11 @@ public class FileManagerActivity extends BaseCompat
   protected void onResume() {
     super.onResume();
     setupHeader();
-    String currentPath = viewModel.getCurrentPath().getValue();
-    if (currentPath != null) {
-      bind.gitActionButton.setVisibility(isGitRepository(currentPath) ? View.VISIBLE : View.GONE);
+    if (!isZipMode) {
+      String currentPath = viewModel.getCurrentPath().getValue();
+      if (currentPath != null) {
+        bind.gitActionButton.setVisibility(isGitRepository(currentPath) ? View.VISIBLE : View.GONE);
+      }
     }
   }
 
