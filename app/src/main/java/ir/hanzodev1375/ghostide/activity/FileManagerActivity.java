@@ -37,6 +37,7 @@ import ir.hanzodev1375.ghostide.databinding.ActivityFilemanagerBinding;
 import ir.hanzodev1375.ghostide.databinding.SelectionPanelBinding;
 import ir.hanzodev1375.ghostide.dialogs.CopyProgressDialog;
 import ir.hanzodev1375.ghostide.dialogs.DeleteProgressDialog;
+import ir.hanzodev1375.ghostide.fragments.FilePropertiesSheet;
 import ir.hanzodev1375.ghostide.jgit.GitHubClient;
 import ir.hanzodev1375.ghostide.jgit.GitHubProfileSheet;
 import ir.hanzodev1375.ghostide.jgit.fragments.GitBottomSheetFragment;
@@ -53,6 +54,7 @@ import ir.theme.themeeditor.ThemeEditorActivity;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import ir.hanzodev1375.ghostide.R;
@@ -550,15 +552,15 @@ public class FileManagerActivity extends BaseCompat
           List<FileManagerModel> selected = adapter.getSelectedItems();
           if (!selected.isEmpty()) {
             new MaterialAlertDialogBuilder(this)
-                .setTitle("Delete")
-                .setMessage("Delete " + selected.size() + " items?")
+                .setTitle(getString(R.string.removed))
+                .setMessage(getString(R.string.removedmassges, selected.size()))
                 .setPositiveButton(
-                    "Delete",
+                    getString(R.string.ok),
                     (d, w) -> {
                       viewModel.deleteFiles(selected);
                       adapter.clearSelection();
                     })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(getString(R.string.cancel), null)
                 .show();
           }
         });
@@ -608,6 +610,7 @@ public class FileManagerActivity extends BaseCompat
 
           PowerMenu menu = new PowerMenu.Builder(this).setIsMaterial(true).build();
           menu.addItem(new PowerMenuItem(getString(R.string.zip)));
+          menu.addItem(new PowerMenuItem(getString(R.string.props_title_multi)));
           menu.setMenuColor(
               MaterialColors.getColor(this, com.google.android.material.R.attr.colorSurface, 0));
           menu.setTextColor(
@@ -625,10 +628,13 @@ public class FileManagerActivity extends BaseCompat
                   }
                   btnClose.performClick();
                   ZipUtil.showZipDialog(FileManagerActivity.this, filesToZip);
+                } else if (index == 1) {
+                  FilePropertiesSheet.newInstance(selected)
+                      .show(getSupportFragmentManager(), FilePropertiesSheet.TAG);
+                  btnClose.performClick();
                 }
               });
-           ObjectUtil.showFixPos(menu,selectionMore);   
-          
+          ObjectUtil.showFixPos(menu, selectionMore);
         });
     selectionPanel.setVisibility(View.GONE);
   }
@@ -700,6 +706,7 @@ public class FileManagerActivity extends BaseCompat
           PowerMenu menu = new PowerMenu.Builder(view.getContext()).setIsMaterial(true).build();
           menu.addItem(new PowerMenuItem(getString(R.string.removed)));
           menu.addItem(new PowerMenuItem(getString(R.string.rename)));
+          menu.addItem(new PowerMenuItem(getString(R.string.props_title_single)));
           menu.setMenuColor(
               MaterialColors.getColor(
                   view.getContext(), com.google.android.material.R.attr.colorSurface, 0));
@@ -715,9 +722,11 @@ public class FileManagerActivity extends BaseCompat
                 switch (index) {
                   case 0 -> removedItem(filemodel);
                   case 1 -> renameItem(filemodel);
+                  case 2 -> FilePropertiesSheet.newInstance(Collections.singletonList(filemodel))
+                      .show(getSupportFragmentManager(), FilePropertiesSheet.TAG);
                 }
               });
-          ObjectUtil.showFixPos(menu,view);
+          ObjectUtil.showFixPos(menu, view);
         });
   }
 
@@ -859,5 +868,18 @@ public class FileManagerActivity extends BaseCompat
   @Override
   public void ConnectionIS() {
     app.init();
+  }
+
+  public void refreshFileList() {
+    runOnUiThread(
+        () -> {
+          String currentPath = viewModel.getCurrentPath().getValue();
+          if (currentPath != null) {
+            viewModel.loadFiles(currentPath);
+          }
+          if (isZipMode && zipAdapter != null && currentZipFilePath != null) {
+            zipAdapter.loadZip(currentZipFilePath, zipAdapter.getCurrentInternalPath());
+          }
+        });
   }
 }
