@@ -113,7 +113,6 @@
     <string name="editorac_notopenfile">No files are open</string>
     <string name="editorac_wassaved">The current file was saved.</string>
     <string name="editorac_errorfargment">Error Fragment not found</string>
-    <!-- new String -->
     <string name="pref_language">App Language</string>
     <string name="pref_language_desc">Choose the display language of the app</string>
     <string name="pref_show_tab_icon_title">Show tab icon</string>
@@ -176,4 +175,22 @@
     <string name="props_selected_count">%d items</string>
     <string name="props_close">Close</string>
     <string name="props_calculating">Calculating</string>
+    <!-- new Strings -->
+    <string name="history_title">History</string>
+    <string name="history_empty">No history yet</string>
+    <string name="bookmark_title">Bookmarks</string>
+    <string name="bookmark_add">Add Bookmark</string>
+    <string name="bookmark_added">Bookmark added</string>
+    <string name="bookmark_removed">Bookmark removed</string>
+    <string name="bookmark_empty">No bookmarks yet</string>
+    <string name="project_new_title">New Project</string>
+    <string name="project_type">Project Type</string>
+    <string name="project_name_hint">Project name</string>
+    <string name="project_package_hint">Package name (e.g. com.example.myapp)</string>
+    <string name="project_create">Create</string>
+    <string name="project_error_name_empty">Project name is required</string>
+    <string name="project_error_pkg_invalid">Enter a valid package name (e.g. com.example)</string>
+    <string name="project_error_title">Error</string>
+    <string name="project_created_toast">Project created successfully</string>
+
 </resources>

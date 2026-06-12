@@ -43,6 +43,13 @@ import ir.hanzodev1375.ghostide.jgit.GitHubProfileSheet;
 import ir.hanzodev1375.ghostide.jgit.fragments.GitBottomSheetFragment;
 import ir.hanzodev1375.ghostide.models.FileManagerModel;
 import ir.hanzodev1375.ghostide.models.ZipEntryModel;
+import ir.hanzodev1375.ghostide.bookmark.BookmarkBottomSheet;
+import ir.hanzodev1375.ghostide.bookmark.BookmarkEntity;
+import ir.hanzodev1375.ghostide.bookmark.BookmarkViewModel;
+import ir.hanzodev1375.ghostide.project.NewProjectDialog;
+import ir.hanzodev1375.ghostide.history.HistoryBottomSheet;
+import ir.hanzodev1375.ghostide.history.HistoryEntity;
+import ir.hanzodev1375.ghostide.history.HistoryViewModel;
 import ir.hanzodev1375.ghostide.mvvm.viewmodel.FileViewModel;
 import ir.hanzodev1375.ghostide.plugin.PluginManager;
 import ir.hanzodev1375.ghostide.utils.MarginItemDecoration;
@@ -86,6 +93,8 @@ public class FileManagerActivity extends BaseCompat
   private DeleteProgressDialog deleteProgressDialog;
   private boolean isZipMode = false;
   private String currentZipFilePath = null;
+  private HistoryViewModel historyViewModel;
+  private BookmarkViewModel bookmarkViewModel;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -111,6 +120,8 @@ public class FileManagerActivity extends BaseCompat
 
     bind.headline.setBackground(ShapeUtil.shape(40f, this));
     viewModel = new ViewModelProvider(this).get(FileViewModel.class);
+    historyViewModel = new ViewModelProvider(this).get(HistoryViewModel.class);
+    bookmarkViewModel = new ViewModelProvider(this).get(BookmarkViewModel.class);
     adapter = new FileManagerAdapter(this);
     bind.rvfiles.setLayoutManager(new LinearLayoutManager(this));
     bind.rvfiles.setAdapter(adapter);
@@ -182,6 +193,8 @@ public class FileManagerActivity extends BaseCompat
 
     adapter.setOnItemClickListener(
         (item, pos) -> {
+          // ذخیره در هیستوری
+          historyViewModel.addToHistory(item.getPath(), item.getName(), item.isDirectory());
           if (item.isDirectory()) {
             viewModel.navigateTo(item.getPath());
           } else if (item.getPath().toLowerCase().endsWith(".zip")) {
@@ -204,6 +217,7 @@ public class FileManagerActivity extends BaseCompat
     List<Integer> listIcon = new ArrayList<>();
     listIcon.add(R.drawable.folder);
     listIcon.add(R.drawable.ic_fileicon);
+    listIcon.add(R.drawable.add);
     bind.fab
         .getRecyclerView()
         .setAdapter(
@@ -213,6 +227,25 @@ public class FileManagerActivity extends BaseCompat
                   switch (mypos) {
                     case 0 -> creatorFolder(fileModels);
                     case 1 -> creatorFile(fileModels);
+                    case 2 -> {
+                      String currentDir = viewModel.getCurrentPath().getValue();
+                      if (currentDir != null) {
+                        new NewProjectDialog(
+                                FileManagerActivity.this,
+                                currentDir,
+                                projectPath ->
+                                    runOnUiThread(
+                                        () -> {
+                                          viewModel.loadFiles(currentDir);
+                                          Toast.makeText(
+                                                  FileManagerActivity.this,
+                                                  getString(R.string.project_created_toast),
+                                                  Toast.LENGTH_SHORT)
+                                              .show();
+                                        }))
+                            .show();
+                      }
+                    }
                   }
                 }));
 
@@ -707,6 +740,7 @@ public class FileManagerActivity extends BaseCompat
           menu.addItem(new PowerMenuItem(getString(R.string.removed)));
           menu.addItem(new PowerMenuItem(getString(R.string.rename)));
           menu.addItem(new PowerMenuItem(getString(R.string.props_title_single)));
+          menu.addItem(new PowerMenuItem(getString(R.string.bookmark_add)));
           menu.setMenuColor(
               MaterialColors.getColor(
                   view.getContext(), com.google.android.material.R.attr.colorSurface, 0));
@@ -724,6 +758,20 @@ public class FileManagerActivity extends BaseCompat
                   case 1 -> renameItem(filemodel);
                   case 2 -> FilePropertiesSheet.newInstance(Collections.singletonList(filemodel))
                       .show(getSupportFragmentManager(), FilePropertiesSheet.TAG);
+                  case 3 -> bookmarkViewModel.toggle(
+                      filemodel.getPath(),
+                      filemodel.getName(),
+                      filemodel.isDirectory(),
+                      isNowBookmarked ->
+                          runOnUiThread(
+                              () ->
+                                  Toast.makeText(
+                                          FileManagerActivity.this,
+                                          isNowBookmarked
+                                              ? getString(R.string.bookmark_added)
+                                              : getString(R.string.bookmark_removed),
+                                          Toast.LENGTH_SHORT)
+                                      .show()));
                 }
               });
           ObjectUtil.showFixPos(menu, view);
@@ -823,6 +871,8 @@ public class FileManagerActivity extends BaseCompat
     menu.addItem(new PowerMenuItem(getString(R.string.settings_title)));
     menu.addItem(new PowerMenuItem(getString(R.string.search_hint)));
     menu.addItem(new PowerMenuItem(getString(R.string.openlogcat)));
+    menu.addItem(new PowerMenuItem(getString(R.string.history_title)));
+    menu.addItem(new PowerMenuItem(getString(R.string.bookmark_title)));
     menu.setAutoDismiss(true);
     menu.setShowBackground(false);
     menu.setAnimation(MenuAnimation.FADE);
@@ -846,6 +896,30 @@ public class FileManagerActivity extends BaseCompat
             case 2 -> {
               var log = new BottomSheetLogView();
               log.show(getSupportFragmentManager(), "log");
+            }
+            case 3 -> {
+              HistoryBottomSheet sheet = HistoryBottomSheet.newInstance();
+              sheet.setOnHistoryItemSelectedListener(
+                  item -> {
+                    if (item.isDirectory) {
+                      viewModel.navigateTo(item.path);
+                    } else {
+                      setupClick(item.path, item.name);
+                    }
+                  });
+              sheet.show(getSupportFragmentManager(), HistoryBottomSheet.TAG);
+            }
+            case 4 -> {
+              BookmarkBottomSheet bsheet = BookmarkBottomSheet.newInstance();
+              bsheet.setOnBookmarkSelectedListener(
+                  item -> {
+                    if (item.isDirectory) {
+                      viewModel.navigateTo(item.path);
+                    } else {
+                      setupClick(item.path, item.name);
+                    }
+                  });
+              bsheet.show(getSupportFragmentManager(), BookmarkBottomSheet.TAG);
             }
           }
         });

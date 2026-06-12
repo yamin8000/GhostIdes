@@ -254,6 +254,13 @@ public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.
     return items.size();
   }
 
+  public void removeItem(int position) {
+    if (position < 0 || position >= items.size()) return;
+    items.remove(position);
+    itemsFull = new ArrayList<>(items);
+    notifyItemRemoved(position);
+  }
+
   class ViewHolder extends ListItemViewHolder {
     ImageView ivIcon;
     TextView tvName;
@@ -333,7 +340,8 @@ public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.
       int color;
       switch (item.getState()) {
         case CREATOR:
-          color = MaterialColors.getColor(tvName, com.google.android.material.R.attr.colorOnPrimary);
+          color =
+              MaterialColors.getColor(tvName, com.google.android.material.R.attr.colorOnPrimary);
           break;
         case RENAME:
           color =

@@ -1,7 +1,7 @@
 <resources>
   <style
     name="AppTheme"
-    parent="Theme.Material3.Light.NoActionBar">
+    parent="Theme.Material3Expressive.Light.NoActionBar">
     <item name="popupMenuBackground">@drawable/menucustom</item>
     <item name="textAppearanceLargePopupMenu">@style/TextAppearance.App.BodyLarge</item>
     <item name="textAppearanceSmallPopupMenu">@style/TextAppearance.App.BodyLarge</item>
